@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>供应商编辑验证测试（简化版）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .test-button {
+            background-color: #52c41a;
+        }
+        .test-button:hover {
+            background-color: #73d13d;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffb3b3;
+            color: #f5222d;
+        }
+        .test-case {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .required {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>供应商编辑验证测试（简化版）</h1>
+        <p>当前验证规则：<strong>只验证公司名称不能为空，其他字段都可以为空</strong></p>
+
+        <form id="supplierForm">
+            <div class="form-group">
+                <label for="company_name">公司名称 <span class="required">*</span></label>
+                <input type="text" id="company_name" name="company_name" placeholder="请输入公司名称">
+            </div>
+
+            <div class="form-group">
+                <label for="contact_person">联系人</label>
+                <input type="text" id="contact_person" name="contact_person" placeholder="请输入联系人姓名（可为空）">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">联系电话</label>
+                <input type="text" id="phone" name="phone" placeholder="请输入联系电话（可为空，无格式验证）">
+            </div>
+
+            <div class="form-group">
+                <label for="email">邮箱地址</label>
+                <input type="text" id="email" name="email" placeholder="请输入邮箱地址（可为空，无格式验证）">
+            </div>
+
+            <div class="form-group">
+                <label for="address">公司地址</label>
+                <input type="text" id="address" name="address" placeholder="请输入公司详细地址（可为空）">
+            </div>
+
+            <div class="form-group">
+                <label for="other_info">其他信息</label>
+                <textarea id="other_info" name="other_info" placeholder="请输入供应商其他相关信息（可为空）"></textarea>
+            </div>
+
+            <button type="submit">提交供应商信息</button>
+            <button type="button" class="test-button" onclick="runAllTests()">运行所有测试</button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div style="margin-top: 30px;">
+            <h3>自动测试用例</h3>
+            
+            <div class="test-case">
+                <strong>测试1：只填写公司名称（应该成功）</strong>
+                <button onclick="testCase1()">运行测试1</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试2：公司名称为空（应该失败）</strong>
+                <button onclick="testCase2()">运行测试2</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试3：填写无效电话格式（应该成功，因为不验证格式）</strong>
+                <button onclick="testCase3()">运行测试3</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试4：填写无效邮箱格式（应该成功，因为不验证格式）</strong>
+                <button onclick="testCase4()">运行测试4</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试5：所有字段都填写有效内容（应该成功）</strong>
+                <button onclick="testCase5()">运行测试5</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取表单元素
+        const form = document.getElementById('supplierForm');
+        const resultDiv = document.getElementById('result');
+
+        // 提交表单
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitForm();
+        });
+
+        async function submitForm() {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                showResult('提交中...', 'info');
+                
+                const response = await fetch('http://localhost:3000/api/suppliers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzYwNzU3NjIsImV4cCI6MTczNjE2MjE2Mn0.Rn8OzIB9ZqGLQMJn8S8Tr_YGXVP8nO04Bhs_Qu6iQq0'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResult(`✅ 提交成功！\n\n返回数据：\n${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ 提交失败！\n\n错误信息：\n${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 网络错误：${error.message}`, 'error');
+            }
+        }
+
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        // 填充表单数据
+        function fillForm(data) {
+            Object.keys(data).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = data[key] || '';
+                }
+            });
+        }
+
+        // 测试用例1：只填写公司名称
+        async function testCase1() {
+            fillForm({
+                company_name: '测试公司A',
+                contact_person: '',
+                phone: '',
+                email: '',
+                address: '',
+                other_info: ''
+            });
+            console.log('测试用例1：只填写公司名称');
+            await submitForm();
+        }
+
+        // 测试用例2：公司名称为空
+        async function testCase2() {
+            fillForm({
+                company_name: '',
+                contact_person: '张三',
+                phone: '13800138000',
+                email: 'test@example.com',
+                address: '北京市朝阳区',
+                other_info: '备注信息'
+            });
+            console.log('测试用例2：公司名称为空');
+            await submitForm();
+        }
+
+        // 测试用例3：填写无效电话格式
+        async function testCase3() {
+            fillForm({
+                company_name: '测试公司B',
+                contact_person: '李四',
+                phone: '123-abc-defg',  // 无效电话格式
+                email: 'test@example.com',
+                address: '上海市浦东新区',
+                other_info: '测试无效电话格式'
+            });
+            console.log('测试用例3：填写无效电话格式');
+            await submitForm();
+        }
+
+        // 测试用例4：填写无效邮箱格式
+        async function testCase4() {
+            fillForm({
+                company_name: '测试公司C',
+                contact_person: '王五',
+                phone: '13900139000',
+                email: 'invalid-email-format',  // 无效邮箱格式
+                address: '广州市天河区',
+                other_info: '测试无效邮箱格式'
+            });
+            console.log('测试用例4：填写无效邮箱格式');
+            await submitForm();
+        }
+
+        // 测试用例5：所有字段都填写有效内容
+        async function testCase5() {
+            fillForm({
+                company_name: '测试公司D',
+                contact_person: '赵六',
+                phone: '13700137000',
+                email: 'zhaoliu@example.com',
+                address: '深圳市南山区科技园',
+                other_info: '这是一个完整的供应商信息测试'
+            });
+            console.log('测试用例5：所有字段都填写有效内容');
+            await submitForm();
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            console.log('开始运行所有测试用例...');
+            
+            await testCase1();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase2();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase3();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase4();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase5();
+            
+            console.log('所有测试用例运行完成！');
+        }
+    </script>
+</body>
+</html>

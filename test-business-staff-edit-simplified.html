@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>业务人员编辑验证测试（简化版）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .test-button {
+            background-color: #52c41a;
+        }
+        .test-button:hover {
+            background-color: #73d13d;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffb3b3;
+            color: #f5222d;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .test-case {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .required {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>业务人员编辑验证测试（简化版）</h1>
+        <p>当前验证规则：<strong>只验证姓名不能为空，其他字段都可以为空</strong></p>
+
+        <form id="businessStaffForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="staff_name">姓名 <span class="required">*</span></label>
+                    <input type="text" id="staff_name" name="staff_name" placeholder="请输入真实姓名">
+                </div>
+
+                <div class="form-group">
+                    <label for="nickname">花名</label>
+                    <input type="text" id="nickname" name="nickname" placeholder="请输入花名/昵称（可为空）">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="position">职位</label>
+                    <select id="position" name="position">
+                        <option value="">请选择或输入职位（可为空）</option>
+                        <option value="销售专员">销售专员</option>
+                        <option value="高级销售经理">高级销售经理</option>
+                        <option value="区域销售总监">区域销售总监</option>
+                        <option value="客户经理">客户经理</option>
+                        <option value="销售总监">销售总监</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="department">部门</label>
+                    <select id="department" name="department">
+                        <option value="">请选择部门（可为空）</option>
+                        <option value="销售部">销售部</option>
+                        <option value="客服部">客服部</option>
+                        <option value="市场部">市场部</option>
+                        <option value="技术部">技术部</option>
+                        <option value="产品部">产品部</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone">联系电话</label>
+                    <input type="text" id="phone" name="phone" placeholder="请输入联系电话（可为空，无格式验证）">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input type="text" id="email" name="email" placeholder="请输入邮箱地址（可为空，无格式验证）">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="contact_info">联系方式</label>
+                <textarea id="contact_info" name="contact_info" placeholder="请输入详细联系方式，如微信、QQ、钉钉等（可为空）"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="status">状态</label>
+                <select id="status" name="status">
+                    <option value="">请选择状态（可为空）</option>
+                    <option value="active">在职</option>
+                    <option value="inactive">离职</option>
+                </select>
+            </div>
+
+            <button type="submit">提交业务人员信息</button>
+            <button type="button" class="test-button" onclick="runAllTests()">运行所有测试</button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div style="margin-top: 30px;">
+            <h3>自动测试用例</h3>
+            
+            <div class="test-case">
+                <strong>测试1：只填写姓名（应该成功）</strong>
+                <button onclick="testCase1()">运行测试1</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试2：姓名为空（应该失败）</strong>
+                <button onclick="testCase2()">运行测试2</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试3：填写无效电话格式（应该成功，因为不验证格式）</strong>
+                <button onclick="testCase3()">运行测试3</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试4：填写无效邮箱格式（应该成功，因为不验证格式）</strong>
+                <button onclick="testCase4()">运行测试4</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试5：所有字段都填写有效内容（应该成功）</strong>
+                <button onclick="testCase5()">运行测试5</button>
+            </div>
+
+            <div class="test-case">
+                <strong>测试6：填写超长姓名（应该失败，超过50字符）</strong>
+                <button onclick="testCase6()">运行测试6</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取表单元素
+        const form = document.getElementById('businessStaffForm');
+        const resultDiv = document.getElementById('result');
+
+        // 提交表单
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitForm();
+        });
+
+        async function submitForm() {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // 清空空字符串值
+            Object.keys(data).forEach(key => {
+                if (data[key] === '') {
+                    delete data[key];
+                }
+            });
+
+            try {
+                showResult('提交中...', 'info');
+                
+                const response = await fetch('http://localhost:3000/api/business-staff', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzYwNzU3NjIsImV4cCI6MTczNjE2MjE2Mn0.Rn8OzIB9ZqGLQMJn8S8Tr_YGXVP8nO04Bhs_Qu6iQq0'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResult(`✅ 提交成功！\n\n返回数据：\n${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ 提交失败！\n\n错误信息：\n${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 网络错误：${error.message}`, 'error');
+            }
+        }
+
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        // 填充表单数据
+        function fillForm(data) {
+            Object.keys(data).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = data[key] || '';
+                }
+            });
+        }
+
+        // 测试用例1：只填写姓名
+        async function testCase1() {
+            fillForm({
+                staff_name: '张三',
+                nickname: '',
+                position: '',
+                department: '',
+                phone: '',
+                email: '',
+                contact_info: '',
+                status: ''
+            });
+            console.log('测试用例1：只填写姓名');
+            await submitForm();
+        }
+
+        // 测试用例2：姓名为空
+        async function testCase2() {
+            fillForm({
+                staff_name: '',
+                nickname: '小李',
+                position: '销售专员',
+                department: '销售部',
+                phone: '13800138000',
+                email: 'test@example.com',
+                contact_info: '微信：test123',
+                status: 'active'
+            });
+            console.log('测试用例2：姓名为空');
+            await submitForm();
+        }
+
+        // 测试用例3：填写无效电话格式
+        async function testCase3() {
+            fillForm({
+                staff_name: '王五',
+                nickname: '小王',
+                position: '客户经理',
+                department: '销售部',
+                phone: '123-abc-defg',  // 无效电话格式
+                email: 'test@example.com',
+                contact_info: '测试无效电话格式',
+                status: 'active'
+            });
+            console.log('测试用例3：填写无效电话格式');
+            await submitForm();
+        }
+
+        // 测试用例4：填写无效邮箱格式
+        async function testCase4() {
+            fillForm({
+                staff_name: '赵六',
+                nickname: '小赵',
+                position: '销售总监',
+                department: '销售部',
+                phone: '13900139000',
+                email: 'invalid-email-format',  // 无效邮箱格式
+                contact_info: '测试无效邮箱格式',
+                status: 'active'
+            });
+            console.log('测试用例4：填写无效邮箱格式');
+            await submitForm();
+        }
+
+        // 测试用例5：所有字段都填写有效内容
+        async function testCase5() {
+            fillForm({
+                staff_name: '刘七',
+                nickname: '阿七',
+                position: '高级销售经理',
+                department: '销售部',
+                phone: '13700137000',
+                email: 'liuqi@example.com',
+                contact_info: '微信：liuqi2024，QQ：12345678',
+                status: 'active'
+            });
+            console.log('测试用例5：所有字段都填写有效内容');
+            await submitForm();
+        }
+
+        // 测试用例6：填写超长姓名
+        async function testCase6() {
+            fillForm({
+                staff_name: '这是一个超长的姓名测试这是一个超长的姓名测试这是一个超长的姓名测试这是一个超长的姓名测试这是一个超长的姓名测试',
+                nickname: '超长名',
+                position: '销售专员',
+                department: '销售部',
+                phone: '13800138000',
+                email: 'test@example.com',
+                contact_info: '测试超长姓名',
+                status: 'active'
+            });
+            console.log('测试用例6：填写超长姓名');
+            await submitForm();
+        }
+
+        // 运行所有测试
+        async function runAllTests() {
+            console.log('开始运行所有测试用例...');
+            
+            await testCase1();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase2();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase3();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase4();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase5();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCase6();
+            
+            console.log('所有测试用例运行完成！');
+        }
+    </script>
+</body>
+</html>

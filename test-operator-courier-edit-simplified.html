@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运营商&快递公司编辑验证测试（简化版）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .test-button {
+            background-color: #52c41a;
+        }
+        .test-button:hover {
+            background-color: #73d13d;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffb3b3;
+            color: #f5222d;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .test-case {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .required {
+            color: red;
+        }
+        .section-title {
+            background-color: #1890ff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #1890ff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('operator')">运营商测试</div>
+        <div class="tab" onclick="switchTab('courier')">快递公司测试</div>
+    </div>
+
+    <!-- 运营商测试部分 -->
+    <div id="operator-content" class="tab-content active">
+        <div class="container">
+            <div class="section-title">运营商编辑验证测试（简化版）</div>
+            <p>当前验证规则：<strong>只验证运营商名称不能为空，其他字段都可以为空</strong></p>
+
+            <form id="operatorForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="operator_name">运营商名称 <span class="required">*</span></label>
+                        <input type="text" id="operator_name" name="name" placeholder="请输入运营商名称">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="operator_code">运营商代码</label>
+                        <input type="text" id="operator_code" name="code" placeholder="请输入运营商代码（可为空）">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="operator_contact_person">联系人</label>
+                        <input type="text" id="operator_contact_person" name="contact_person" placeholder="请输入联系人姓名（可为空）">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="operator_phone">联系电话</label>
+                        <input type="text" id="operator_phone" name="phone" placeholder="请输入联系电话（可为空，无格式验证）">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="operator_email">邮箱地址</label>
+                        <input type="text" id="operator_email" name="email" placeholder="请输入邮箱地址（可为空，无格式验证）">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="operator_address">地址</label>
+                        <input type="text" id="operator_address" name="address" placeholder="请输入详细地址（可为空）">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="operator_description">描述</label>
+                    <textarea id="operator_description" name="description" placeholder="请输入运营商描述信息（可为空）"></textarea>
+                </div>
+
+                <button type="submit">提交运营商信息</button>
+                <button type="button" class="test-button" onclick="runOperatorTests()">运行运营商测试</button>
+            </form>
+
+            <div id="operatorResult" class="result"></div>
+
+            <div style="margin-top: 30px;">
+                <h3>运营商自动测试用例</h3>
+                
+                <div class="test-case">
+                    <strong>测试1：只填写运营商名称（应该成功）</strong>
+                    <button onclick="operatorTestCase1()">运行测试1</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试2：运营商名称为空（应该失败）</strong>
+                    <button onclick="operatorTestCase2()">运行测试2</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试3：填写无效电话格式（应该成功，因为不验证格式）</strong>
+                    <button onclick="operatorTestCase3()">运行测试3</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试4：填写无效邮箱格式（应该成功，因为不验证格式）</strong>
+                    <button onclick="operatorTestCase4()">运行测试4</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试5：所有字段都填写有效内容（应该成功）</strong>
+                    <button onclick="operatorTestCase5()">运行测试5</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快递公司测试部分 -->
+    <div id="courier-content" class="tab-content">
+        <div class="container">
+            <div class="section-title">快递公司编辑验证测试（简化版）</div>
+            <p>当前验证规则：<strong>只验证快递公司名称不能为空，其他字段都可以为空</strong></p>
+
+            <form id="courierForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="courier_name">快递公司名称 <span class="required">*</span></label>
+                        <input type="text" id="courier_name" name="name" placeholder="请输入快递公司名称">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courier_code">快递公司代码</label>
+                        <input type="text" id="courier_code" name="code" placeholder="请输入快递公司代码（可为空）">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="courier_contact_person">联系人</label>
+                        <input type="text" id="courier_contact_person" name="contact_person" placeholder="请输入联系人姓名（可为空）">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courier_phone">联系电话</label>
+                        <input type="text" id="courier_phone" name="phone" placeholder="请输入联系电话（可为空，无格式验证）">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="courier_email">邮箱地址</label>
+                        <input type="text" id="courier_email" name="email" placeholder="请输入邮箱地址（可为空，无格式验证）">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courier_address">地址</label>
+                        <input type="text" id="courier_address" name="address" placeholder="请输入详细地址（可为空）">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="courier_tracking_url">跟踪网址</label>
+                    <input type="text" id="courier_tracking_url" name="tracking_url" placeholder="请输入快递跟踪网址（可为空，无格式验证）">
+                </div>
+
+                <div class="form-group">
+                    <label for="courier_description">描述</label>
+                    <textarea id="courier_description" name="description" placeholder="请输入快递公司描述信息（可为空）"></textarea>
+                </div>
+
+                <button type="submit">提交快递公司信息</button>
+                <button type="button" class="test-button" onclick="runCourierTests()">运行快递公司测试</button>
+            </form>
+
+            <div id="courierResult" class="result"></div>
+
+            <div style="margin-top: 30px;">
+                <h3>快递公司自动测试用例</h3>
+                
+                <div class="test-case">
+                    <strong>测试1：只填写快递公司名称（应该成功）</strong>
+                    <button onclick="courierTestCase1()">运行测试1</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试2：快递公司名称为空（应该失败）</strong>
+                    <button onclick="courierTestCase2()">运行测试2</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试3：填写无效电话格式（应该成功，因为不验证格式）</strong>
+                    <button onclick="courierTestCase3()">运行测试3</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试4：填写无效邮箱格式（应该成功，因为不验证格式）</strong>
+                    <button onclick="courierTestCase4()">运行测试4</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试5：填写无效跟踪网址格式（应该成功，因为不验证格式）</strong>
+                    <button onclick="courierTestCase5()">运行测试5</button>
+                </div>
+
+                <div class="test-case">
+                    <strong>测试6：所有字段都填写有效内容（应该成功）</strong>
+                    <button onclick="courierTestCase6()">运行测试6</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 切换标签页
+        function switchTab(type) {
+            // 隐藏所有内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // 显示选中的内容
+            document.getElementById(type + '-content').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 获取表单元素
+        const operatorForm = document.getElementById('operatorForm');
+        const courierForm = document.getElementById('courierForm');
+        const operatorResultDiv = document.getElementById('operatorResult');
+        const courierResultDiv = document.getElementById('courierResult');
+
+        // 提交表单
+        operatorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitOperatorForm();
+        });
+
+        courierForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitCourierForm();
+        });
+
+        async function submitOperatorForm() {
+            const formData = new FormData(operatorForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // 清空空字符串值
+            Object.keys(data).forEach(key => {
+                if (data[key] === '') {
+                    delete data[key];
+                }
+            });
+
+            try {
+                showOperatorResult('提交中...', 'info');
+                
+                const response = await fetch('http://localhost:3000/api/operators', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzYwNzU3NjIsImV4cCI6MTczNjE2MjE2Mn0.Rn8OzIB9ZqGLQMJn8S8Tr_YGXVP8nO04Bhs_Qu6iQq0'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showOperatorResult(`✅ 运营商提交成功！\n\n返回数据：\n${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showOperatorResult(`❌ 运营商提交失败！\n\n错误信息：\n${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showOperatorResult(`❌ 网络错误：${error.message}`, 'error');
+            }
+        }
+
+        async function submitCourierForm() {
+            const formData = new FormData(courierForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // 清空空字符串值
+            Object.keys(data).forEach(key => {
+                if (data[key] === '') {
+                    delete data[key];
+                }
+            });
+
+            try {
+                showCourierResult('提交中...', 'info');
+                
+                const response = await fetch('http://localhost:3000/api/couriers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MzYwNzU3NjIsImV4cCI6MTczNjE2MjE2Mn0.Rn8OzIB9ZqGLQMJn8S8Tr_YGXVP8nO04Bhs_Qu6iQq0'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showCourierResult(`✅ 快递公司提交成功！\n\n返回数据：\n${JSON.stringify(result, null, 2)}`, 'success');
+                } else {
+                    showCourierResult(`❌ 快递公司提交失败！\n\n错误信息：\n${JSON.stringify(result, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showCourierResult(`❌ 网络错误：${error.message}`, 'error');
+            }
+        }
+
+        function showOperatorResult(message, type) {
+            operatorResultDiv.textContent = message;
+            operatorResultDiv.className = `result ${type}`;
+            operatorResultDiv.style.display = 'block';
+        }
+
+        function showCourierResult(message, type) {
+            courierResultDiv.textContent = message;
+            courierResultDiv.className = `result ${type}`;
+            courierResultDiv.style.display = 'block';
+        }
+
+        // 填充运营商表单数据
+        function fillOperatorForm(data) {
+            Object.keys(data).forEach(key => {
+                const input = document.getElementById('operator_' + key);
+                if (input) {
+                    input.value = data[key] || '';
+                }
+            });
+        }
+
+        // 填充快递公司表单数据
+        function fillCourierForm(data) {
+            Object.keys(data).forEach(key => {
+                const input = document.getElementById('courier_' + key);
+                if (input) {
+                    input.value = data[key] || '';
+                }
+            });
+        }
+
+        // 运营商测试用例
+        async function operatorTestCase1() {
+            fillOperatorForm({
+                name: '中国移动',
+                code: '',
+                contact_person: '',
+                phone: '',
+                email: '',
+                address: '',
+                description: ''
+            });
+            console.log('运营商测试用例1：只填写运营商名称');
+            await submitOperatorForm();
+        }
+
+        async function operatorTestCase2() {
+            fillOperatorForm({
+                name: '',
+                code: 'CMCC',
+                contact_person: '张三',
+                phone: '13800138000',
+                email: 'test@cmcc.com',
+                address: '北京市西城区',
+                description: '测试运营商名称为空'
+            });
+            console.log('运营商测试用例2：运营商名称为空');
+            await submitOperatorForm();
+        }
+
+        async function operatorTestCase3() {
+            fillOperatorForm({
+                name: '中国联通',
+                code: 'CUCC',
+                contact_person: '李四',
+                phone: '123-abc-defg',  // 无效电话格式
+                email: 'test@unicom.com',
+                address: '上海市浦东新区',
+                description: '测试无效电话格式'
+            });
+            console.log('运营商测试用例3：填写无效电话格式');
+            await submitOperatorForm();
+        }
+
+        async function operatorTestCase4() {
+            fillOperatorForm({
+                name: '中国电信',
+                code: 'CTCC',
+                contact_person: '王五',
+                phone: '13900139000',
+                email: 'invalid-email-format',  // 无效邮箱格式
+                address: '广州市天河区',
+                description: '测试无效邮箱格式'
+            });
+            console.log('运营商测试用例4：填写无效邮箱格式');
+            await submitOperatorForm();
+        }
+
+        async function operatorTestCase5() {
+            fillOperatorForm({
+                name: '中国广电',
+                code: 'CBN',
+                contact_person: '赵六',
+                phone: '13700137000',
+                email: 'contact@cbn.cn',
+                address: '深圳市南山区科技园',
+                description: '这是一个完整的运营商信息测试'
+            });
+            console.log('运营商测试用例5：所有字段都填写有效内容');
+            await submitOperatorForm();
+        }
+
+        // 快递公司测试用例
+        async function courierTestCase1() {
+            fillCourierForm({
+                name: '顺丰速运',
+                code: '',
+                contact_person: '',
+                phone: '',
+                email: '',
+                address: '',
+                tracking_url: '',
+                description: ''
+            });
+            console.log('快递公司测试用例1：只填写快递公司名称');
+            await submitCourierForm();
+        }
+
+        async function courierTestCase2() {
+            fillCourierForm({
+                name: '',
+                code: 'YTO',
+                contact_person: '张三',
+                phone: '13800138000',
+                email: 'test@yto.com',
+                address: '北京市朝阳区',
+                tracking_url: 'https://www.yto.net.cn',
+                description: '测试快递公司名称为空'
+            });
+            console.log('快递公司测试用例2：快递公司名称为空');
+            await submitCourierForm();
+        }
+
+        async function courierTestCase3() {
+            fillCourierForm({
+                name: '中通快递',
+                code: 'ZTO',
+                contact_person: '李四',
+                phone: '123-abc-defg',  // 无效电话格式
+                email: 'test@zto.com',
+                address: '上海市青浦区',
+                tracking_url: 'https://www.zto.com',
+                description: '测试无效电话格式'
+            });
+            console.log('快递公司测试用例3：填写无效电话格式');
+            await submitCourierForm();
+        }
+
+        async function courierTestCase4() {
+            fillCourierForm({
+                name: '韵达速递',
+                code: 'YD',
+                contact_person: '王五',
+                phone: '13900139000',
+                email: 'invalid-email-format',  // 无效邮箱格式
+                address: '杭州市余杭区',
+                tracking_url: 'https://www.yunda.com',
+                description: '测试无效邮箱格式'
+            });
+            console.log('快递公司测试用例4：填写无效邮箱格式');
+            await submitCourierForm();
+        }
+
+        async function courierTestCase5() {
+            fillCourierForm({
+                name: '申通快递',
+                code: 'STO',
+                contact_person: '赵六',
+                phone: '13700137000',
+                email: 'contact@sto.com.cn',
+                address: '上海市奉贤区',
+                tracking_url: 'invalid-url-format',  // 无效URL格式
+                description: '测试无效跟踪网址格式'
+            });
+            console.log('快递公司测试用例5：填写无效跟踪网址格式');
+            await submitCourierForm();
+        }
+
+        async function courierTestCase6() {
+            fillCourierForm({
+                name: '圆通速递',
+                code: 'YTO',
+                contact_person: '钱七',
+                phone: '13600136000',
+                email: 'service@yto.net.cn',
+                address: '上海市青浦区华新镇',
+                tracking_url: 'https://www.yto.net.cn/service/bill',
+                description: '这是一个完整的快递公司信息测试'
+            });
+            console.log('快递公司测试用例6：所有字段都填写有效内容');
+            await submitCourierForm();
+        }
+
+        // 运行所有运营商测试
+        async function runOperatorTests() {
+            console.log('开始运行所有运营商测试用例...');
+            
+            await operatorTestCase1();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await operatorTestCase2();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await operatorTestCase3();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await operatorTestCase4();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await operatorTestCase5();
+            
+            console.log('所有运营商测试用例运行完成！');
+        }
+
+        // 运行所有快递公司测试
+        async function runCourierTests() {
+            console.log('开始运行所有快递公司测试用例...');
+            
+            await courierTestCase1();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await courierTestCase2();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await courierTestCase3();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await courierTestCase4();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await courierTestCase5();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await courierTestCase6();
+            
+            console.log('所有快递公司测试用例运行完成！');
+        }
+    </script>
+</body>
+</html>

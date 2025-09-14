@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>供应商编辑测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .error { background: #ffe6e6; border-color: #ff9999; }
+        .success { background: #e6ffe6; border-color: #99ff99; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+        .form-group { margin: 10px 0; }
+        label { display: block; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>供应商编辑功能测试</h1>
+        
+        <h2>1. 登录获取Token</h2>
+        <button onclick="testLogin()">登录</button>
+        <div id="loginResult" class="result"></div>
+        
+        <h2>2. 获取供应商列表</h2>
+        <button onclick="getSuppliers()">获取供应商列表</button>
+        <div id="suppliersResult" class="result"></div>
+        
+        <h2>3. 编辑供应商测试</h2>
+        <div class="form-group">
+            <label>供应商ID:</label>
+            <input type="number" id="supplierId" value="1" placeholder="输入要编辑的供应商ID">
+        </div>
+        <div class="form-group">
+            <label>公司名称:</label>
+            <input type="text" id="companyName" value="测试公司名称" placeholder="输入公司名称">
+        </div>
+        <div class="form-group">
+            <label>联系人:</label>
+            <input type="text" id="contactPerson" value="张经理" placeholder="输入联系人">
+        </div>
+        <div class="form-group">
+            <label>联系电话:</label>
+            <input type="text" id="phone" value="0755-12345678" placeholder="输入联系电话">
+        </div>
+        <div class="form-group">
+            <label>邮箱地址:</label>
+            <input type="email" id="email" value="test@example.com" placeholder="输入邮箱地址">
+        </div>
+        <div class="form-group">
+            <label>公司地址:</label>
+            <input type="text" id="address" value="深圳市南山区测试地址" placeholder="输入公司地址">
+        </div>
+        <div class="form-group">
+            <label>其他信息:</label>
+            <textarea id="otherInfo" rows="3" placeholder="输入其他信息">这是一个测试供应商的更新</textarea>
+        </div>
+        
+        <button onclick="testUpdateSupplier()">测试编辑供应商</button>
+        <div id="updateResult" class="result"></div>
+        
+        <h2>4. 测试不同电话格式</h2>
+        <button onclick="testPhoneFormats()">测试电话格式验证</button>
+        <div id="phoneTestResult" class="result"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let suppliers = [];
+        
+        async function testLogin() {
+            const result = document.getElementById('loginResult');
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.accessToken;
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>登录成功</h4>
+                        <p>用户: ${data.data.user.username}</p>
+                        <p>角色: ${data.data.user.role}</p>
+                        <p>Token已获取</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>登录失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function getSuppliers() {
+            const result = document.getElementById('suppliersResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/suppliers', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    suppliers = data.data;
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>获取供应商列表成功</h4>
+                        <p>共 ${suppliers.length} 个供应商</p>
+                        <ul>
+                            ${suppliers.map(s => `<li>ID: ${s.id}, 公司: ${s.company_name}, 电话: ${s.phone || '无'}</li>`).join('')}
+                        </ul>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>获取失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testUpdateSupplier() {
+            const result = document.getElementById('updateResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            const supplierData = {
+                company_name: document.getElementById('companyName').value,
+                contact_person: document.getElementById('contactPerson').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+                other_info: document.getElementById('otherInfo').value
+            };
+            
+            const id = document.getElementById('supplierId').value;
+            
+            try {
+                result.innerHTML = '<h4>提交中...</h4>';
+                
+                const response = await fetch(`/api/suppliers/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(supplierData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>供应商编辑成功</h4>
+                        <p>公司名称: ${data.data.company_name}</p>
+                        <p>联系人: ${data.data.contact_person}</p>
+                        <p>电话: ${data.data.phone}</p>
+                        <p>邮箱: ${data.data.email}</p>
+                        <p>地址: ${data.data.address}</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                if (error.response) {
+                    const errorData = await error.response.json();
+                    if (errorData.errors) {
+                        const errors = errorData.errors.map(e => e.msg).join('; ');
+                        result.innerHTML = `<h4>验证失败</h4><p>${errors}</p>`;
+                    } else {
+                        result.innerHTML = `<h4>编辑失败</h4><p>${errorData.message}</p>`;
+                    }
+                } else {
+                    result.innerHTML = `<h4>编辑失败</h4><p>${error.message}</p>`;
+                }
+            }
+        }
+        
+        async function testPhoneFormats() {
+            const result = document.getElementById('phoneTestResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            const phoneFormats = [
+                { phone: '13812345678', desc: '手机号' },
+                { phone: '0755-12345678', desc: '固定电话(带横线)' },
+                { phone: '075512345678', desc: '固定电话(不带横线)' },
+                { phone: '4001234567', desc: '400电话' },
+                { phone: '021-12345678', desc: '上海固话' },
+                { phone: '123456', desc: '无效电话(太短)' },
+                { phone: 'abc123', desc: '无效电话(包含字母)' }
+            ];
+            
+            result.innerHTML = '<h4>测试中...</h4>';
+            let testResults = [];
+            
+            for (const test of phoneFormats) {
+                try {
+                    const supplierData = {
+                        company_name: `测试公司-${test.desc}`,
+                        phone: test.phone
+                    };
+                    
+                    const response = await fetch('/api/suppliers/1', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify(supplierData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        testResults.push(`✅ ${test.desc}: "${test.phone}" - 验证通过`);
+                    } else {
+                        if (data.errors) {
+                            const errors = data.errors.map(e => e.msg).join('; ');
+                            testResults.push(`❌ ${test.desc}: "${test.phone}" - ${errors}`);
+                        } else {
+                            testResults.push(`❌ ${test.desc}: "${test.phone}" - ${data.message}`);
+                        }
+                    }
+                } catch (error) {
+                    testResults.push(`❌ ${test.desc}: "${test.phone}" - 请求失败`);
+                }
+            }
+            
+            result.className = 'result success';
+            result.innerHTML = `
+                <h4>电话格式验证测试结果</h4>
+                <ul>
+                    ${testResults.map(r => `<li>${r}</li>`).join('')}
+                </ul>
+            `;
+        }
+        
+        // 页面加载时自动登录
+        window.onload = function() {
+            testLogin();
+        };
+    </script>
+</body>
+</html>

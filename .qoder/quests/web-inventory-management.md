@@ -1479,36 +1479,45 @@ POST   /inbound/number-reserve         # 预留编号（防止并发冲突）
 flowchart TD
     A[创建出库单] --> B[选择出库方式]
     B -->|按订单出库| C[输入订单信息]
-    B -->|按需求出库| D[选择出库产品]
+    B -->|按箱号出库| D[输入/扫描箱号]
+    B -->|按IMEI出库| E[输入/扫描IMEI号]
+    B -->|按需求出库| F[选择出库产品]
     
-    C --> E[查询订单关联产品]
-    D --> F[扫描/选择IMEI]
+    C --> G[查询订单关联产品]
+    D --> H[查询箱号关联产品]
+    E --> I[查询IMEI关联产品]
+    F --> J[扫描/选择产品]
     
-    E --> G[验证库存状态]
-    F --> G
+    G --> K[验证库存状态]
+    H --> K
+    I --> K
+    J --> K
     
-    G --> H{库存充足?}
-    H -->|否| I[显示库存不足提示]
-    H -->|是| J[填写出库信息]
+    K --> L{库存充足?}
+    L -->|否| M[显示库存不足提示]
+    L -->|是| N[确认出库产品清单]
     
-    I --> K[调整出库数量]
-    K --> G
+    M --> O[调整出库数量或重新选择]
+    O --> K
     
-    J --> L[选择出库产品]
-    L --> M[填写物流信息]
-    M --> N[确认出库清单]
-    N --> O[执行出库操作]
+    N --> P[填写出库信息]
+    P --> Q[填写物流信息]
+    Q --> R[确认出库清单]
+    R --> S[执行出库操作]
     
-    O --> P[更新库存状态]
-    P --> Q[生成出库记录]
-    Q --> Q1[自动生成出库单]
-    Q1 --> Q2[生成二维码]
-    Q2 --> R[打印/下载出库单]
-    R --> S[出库完成]
+    S --> T[更新库存状态]
+    T --> U[生成出库记录]
+    U --> V[自动生成出库单]
+    V --> W[生成二维码]
+    W --> X[打印/下载出库单]
+    X --> Y[出库完成]
 ```
 
 #### 出库功能特性
 - **智能分配**: 根据先进先出原则自动分配
+- **多种出库方式**: 支持按订单、按箱号、按IMEI号、按需求出库
+- **箱号出库**: 支持扫描或输入箱号，自动获取箱内所有产品
+- **IMEI出库**: 支持扫描或输入IMEI号，精确定位单个产品
 - **批量出库**: 支持多个产品同时出库
 - **订单管理**: 与订单系统集成
 - **出库确认**: 双重确认机制防止误操作
@@ -1516,6 +1525,342 @@ flowchart TD
 - **物流跟踪**: 快递公司和快递单号跟踪
 - **自动生成出库单**: 支持自动生成标准化出库单据
 - **数据导出**: 支持多种格式的出库数据导出功能
+
+#### 按箱号和IMEI出库功能详细设计
+
+**按箱号出库功能**
+
+1. **功能描述**
+   - 支持通过扫描或手动输入箱号进行整箱出库
+   - 自动获取箱内所有产品信息
+   - 支持部分出库（箱内产品不全部出库）
+   - 自动计算剩余库存和更新状态
+
+2. **箱号查询机制**
+   ```sql
+   -- 根据箱号查询库存信息
+   SELECT 
+       product_name,
+       product_model,
+       imei,
+       stock_in_quantity,
+       stock_out_quantity,
+       (stock_in_quantity - COALESCE(stock_out_quantity, 0)) as available_quantity,
+       stock_in_status,
+       stock_out_status
+   FROM inventory 
+   WHERE batch_number = '{box_number}' 
+   AND stock_in_status = '已入库'
+   AND (stock_out_status IS NULL OR stock_out_status != '已出库')
+   ORDER BY stock_in_time ASC;
+   ```
+
+3. **箱号出库流程**
+   ```mermaid
+   flowchart TD
+       A[扫描或输入箱号] --> B[验证箱号格式]
+       B --> C{箱号是否存在?}
+       C -->|否| D[显示箱号不存在错误]
+       C -->|是| E[查询箱内可用产品]
+       E --> F{是否有可用产品?}
+       F -->|否| G[显示箱内无可用产品]
+       F -->|是| H[显示箱内产品清单]
+       H --> I[选择出库数量]
+       I --> J[确认出库清单]
+       J --> K[执行出库操作]
+   ```
+
+4. **箱号出库界面设计**
+   ```
+   +--------------------------------------------------+
+   |              按箱号出库                  |
+   +--------------------------------------------------+
+   | 箱号输入: [BOX001        ] [扫描] [查询] |
+   |                                                |
+   | 箱内产品清单:                          |
+   | +----+----------+----------+------+------+   |
+   | |选择|产品名称  |IMEI号   |库存|出库数量| |
+   | +----+----------+----------+------+------+   |
+   | |[x] |互联网模组|12345678901|  50 |  30  | |
+   | |[x] |互联网模组|12345678902|  30 |  20  | |
+   | |[ ] |互联网模组|12345678903|  40 |  0   | |
+   | +----+----------+----------+------+------+   |
+   |                                                |
+   | 合计选中: 2件  计划出库: 50件      |
+   |                                                |
+   | [全选] [全不选] [确认出库] [取消]  |
+   +--------------------------------------------------+
+   ```
+
+**按IMEI出库功能**
+
+1. **功能描述**
+   - 支持通过扫描或手动输入IMEI号进行精确出库
+   - 实时验证IMEI号有效性和库存状态
+   - 支持批量IMEI扫描和出库
+   - 自动获取产品详细信息和库存状态
+
+2. **IMEI查询机制**
+   ```sql
+   -- 根据IMEI号查询产品信息
+   SELECT 
+       id,
+       product_name,
+       product_model,
+       product_description,
+       operator,
+       batch_number,
+       stock_in_quantity,
+       stock_out_quantity,
+       (stock_in_quantity - COALESCE(stock_out_quantity, 0)) as available_quantity,
+       stock_in_status,
+       stock_out_status,
+       stock_in_time,
+       supplier
+   FROM inventory 
+   WHERE imei = '{imei_number}'
+   AND stock_in_status = '已入库'
+   AND (stock_out_status IS NULL OR stock_out_status != '已出库');
+   ```
+
+3. **IMEI出库流程**
+   ```mermaid
+   flowchart TD
+       A[扫描或输入IMEI号] --> B[验证IMEI格式]
+       B --> C{IMEI是否存在且可用?}
+       C -->|否| D[显示IMEI不存在或不可用]
+       C -->|是| E[获取产品详细信息]
+       E --> F[显示产品信息和库存状态]
+       F --> G[确认出库数量]
+       G --> H[添加到出库清单]
+       H --> I{是否继续扫描?}
+       I -->|是| A
+       I -->|否| J[确认整个出库清单]
+       J --> K[执行出库操作]
+   ```
+
+4. **IMEI出库界面设计**
+   ```
+   +--------------------------------------------------+
+   |              按IMEI出库                     |
+   +--------------------------------------------------+
+   | IMEI输入: [123456789012345] [扫描] [查询] |
+   |                                                |
+   | 产品信息:                                |
+   | 产品名称: 互联网模组                   |
+   | 产品型号: LTE-M                           |
+   | 运营商: 中国移动                       |
+   | 箱号: BOX001                              |
+   | 库存数量: 1件                         |
+   | 当前状态: 已入库                     |
+   |                                                |
+   | 出库数量: [1] 件                       |
+   |                                                |
+   | 已选产品清单:                          |
+   | 1. IMEI: 123456789012345 (互联网模组)    |
+   |                                                |
+   | [添加到清单] [继续扫描] [确认出库]  |
+   +--------------------------------------------------+
+   ```
+
+**批量IMEI出库功能**
+
+1. **批量扫描支持**
+   - 支持连续扫描多个IMEI号
+   - 实时显示扫描结果和验证状态
+   - 自动去重和错误提示
+   - 支持批量导入IMEI清单
+
+2. **批量IMEI验证机制**
+   ```python
+   def validate_batch_imei(imei_list):
+       """
+       批量验证IMEI号有效性和库存状态
+       """
+       results = []
+       for imei in imei_list:
+           result = {
+               'imei': imei,
+               'valid': False,
+               'available': False,
+               'product_info': None,
+               'error_message': None
+           }
+           
+           # 格式验证
+           if not self.validate_imei_format(imei):
+               result['error_message'] = 'IMEI格式错误'
+               results.append(result)
+               continue
+           
+           # 库存查询
+           product = self.query_product_by_imei(imei)
+           if not product:
+               result['error_message'] = 'IMEI不存在或已出库'
+           else:
+               result['valid'] = True
+               result['available'] = True
+               result['product_info'] = product
+           
+           results.append(result)
+       
+       return results
+   ```
+
+3. **批量出库界面**
+   ```
+   +--------------------------------------------------+
+   |              批量IMEI出库                |
+   +--------------------------------------------------+
+   | 扫描区域: [连续扫描中...     ] [停止] |
+   |                                                |
+   | 批量IMEI导入: [选择文件] [上传]      |
+   |                                                |
+   | 扫描结果: (已扫描: 15, 成功: 12, 失败: 3) |
+   | +----+----------+----------+------+------+   |
+   | |状态|IMEI号   |产品名称|箱号|操作 |   |
+   | +----+----------+----------+------+------+   |
+   | |✓   |123456789012345|互联网模组|BOX001|[移除]| |
+   | |✓   |123456789012346|互联网模组|BOX001|[移除]| |
+   | |✗   |123456789012347|IMEI不存在 |  -   |[移除]| |
+   | +----+----------+----------+------+------+   |
+   |                                                |
+   | [清空列表] [重新扫描] [确认出库]      |
+   +--------------------------------------------------+
+   ```
+
+**数据验证和容错机制**
+
+1. **箱号验证规则**
+   - 箱号格式验证（支持多种格式）
+   - 箱号存在性检查
+   - 箱内产品可用性验证
+   - 重复箱号检测
+
+2. **IMEI验证规则**
+   - IMEI格式验证（15位数字）
+   - IMEI校验码验证（Luhn算法）
+   - IMEI唯一性和存在性检查
+   - IMEI库存状态验证
+
+3. **错误处理机制**
+   ```python
+   class OutboundValidationError(Exception):
+       def __init__(self, error_type, message, details=None):
+           self.error_type = error_type
+           self.message = message
+           self.details = details or {}
+   
+   def handle_validation_error(error):
+       error_messages = {
+           'INVALID_BOX_NUMBER': '箱号格式错误或不存在',
+           'INVALID_IMEI': 'IMEI号格式错误或不存在',
+           'INSUFFICIENT_STOCK': '库存不足',
+           'PRODUCT_NOT_AVAILABLE': '产品不可用',
+           'DUPLICATE_ENTRY': '重复的出库记录'
+       }
+       return error_messages.get(error.error_type, '未知错误')
+   ```
+
+**性能优化**
+
+1. **数据库索引优化**
+   ```sql
+   -- 为箱号和IMEI创建索引
+   CREATE INDEX idx_batch_number ON inventory(batch_number);
+   CREATE INDEX idx_imei ON inventory(imei);
+   CREATE INDEX idx_stock_status ON inventory(stock_in_status, stock_out_status);
+   
+   -- 复合索引优化查询
+   CREATE INDEX idx_box_stock_status ON inventory(batch_number, stock_in_status, stock_out_status);
+   CREATE INDEX idx_imei_stock_status ON inventory(imei, stock_in_status, stock_out_status);
+   ```
+
+2. **缓存策略**
+   - 箱号产品信息缓存
+   - IMEI产品信息缓存
+   - 常用查询结果缓存
+   - 缓存失效策略
+
+**API接口设计**
+
+新增箱号和IMEI出库相关API：
+
+```
+GET    /outbound/box/{box_number}           # 查询箱内产品信息
+POST   /outbound/box                        # 按箱号出库
+GET    /outbound/imei/{imei}                # 查询IMEI产品信息
+POST   /outbound/imei                       # 按IMEI出库
+POST   /outbound/imei/batch                 # 批量IMEI出库
+POST   /outbound/validate/box               # 验证箱号
+POST   /outbound/validate/imei              # 验证IMEI
+POST   /outbound/validate/imei/batch        # 批量验证IMEI
+```
+
+**用户操作指南**
+
+1. **箱号出库操作步骤**
+   - 步骤1：选择“按箱号出库”选项
+   - 步骤2：扫描或输入箱号（如BOX001）
+   - 步骤3：系统自动查询箱内产品清单
+   - 步骤4：选择需要出库的产品和数量
+   - 步骤5：填写出库相关信息（领用对象、合同号等）
+   - 步骤6：确认出库清单并提交
+
+2. **IMEI出库操作步骤**
+   - 步骤1：选择“按IMEI出库”选项
+   - 步骤2：扫描或输入IMEI号（15位数字）
+   - 步骤3：系统自动获取产品信息和库存状态
+   - 步骤4：确认出库数量（通常为1件）
+   - 步骤5：可选择继续扫描其他IMEI或直接提交
+   - 步骤6：填写出库相关信息并确认提交
+
+3. **批量IMEI出库操作步骤**
+   - 步骤1：选择“批量IMEI出库”选项
+   - 步骤2：通过连续扫描或文件导入方式添加IMEI
+   - 步骤3：系统自动验证所有IMEI号有效性
+   - 步骤4：查看验证结果，移除无效或不可用的IMEI
+   - 步骤5：确认整个出库清单并提交
+
+**常见问题解决**
+
+1. **箱号相关问题**
+   - 问题：箱号不存在
+   - 解决：检查箱号输入是否正确，确认箱子已入库
+   
+   - 问题：箱内无可用产品
+   - 解决：箱内所有产品可能已出库，检查库存状态
+
+2. **IMEI相关问题**
+   - 问题：IMEI格式错误
+   - 解决：确认IMEI号为15位数字，检查输入正确性
+   
+   - 问题：IMEI不存在或已出库
+   - 解决：检查IMEI号是否正确，查看库存记录和出库历史
+
+3. **批量操作问题**
+   - 问题：批量扫描速度慢
+   - 解决：检查扫描设备连接，优化网络环境
+   
+   - 问题：部分IMEI验证失败
+   - 解决：查看错误详情，逐个检查失败的IMEI号
+
+**安全控制和权限管理**
+
+1. **操作权限控制**
+   - 不同用户角色对箱号和IMEI出库的权限限制
+   - 支持按产品类型、供应商等维度的权限控制
+   - 大批量出库需要管理员审批
+
+2. **操作日志记录**
+   - 记录所有箱号和IMEI出库操作
+   - 包含操作用户、时间、数量、原因等信息
+   - 支持日志查询和导出功能
+
+3. **审计跟踪**
+   - 对关键操作进行实时监控
+   - 异常操作自动告警
+   - 操作轨迹可回溯和审计
 
 #### 自动生成出库单功能详细设计
 
