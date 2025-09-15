@@ -17,26 +17,6 @@ router.get('/options',
   ProductController.getOptions
 );
 
-// 获取运营商列表
-router.get('/operators', 
-  ProductController.getOperators
-);
-
-// 获取供应商列表（从产品表）
-router.get('/suppliers', 
-  ProductController.getSuppliers
-);
-
-// 获取快递公司列表
-router.get('/couriers', 
-  ProductController.getCouriers
-);
-
-// 根据运营商获取产品
-router.get('/operator/:operator', 
-  ProductController.getByOperator
-);
-
 // 获取单个产品
 router.get('/:id', 
   validateId,

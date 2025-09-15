@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录问题诊断工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffb3b3;
+            color: #f5222d;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .user-list {
+            background-color: #fafafa;
+            border: 1px solid #d9d9d9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .user-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        .quick-login {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #52c41a;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .quick-login:hover {
+            background-color: #73d13d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 登录问题诊断工具</h1>
+        <p>这个工具帮助您诊断登录失败的问题</p>
+        
+        <div class="user-list">
+            <h3>📋 系统用户列表（根据密码验证工具结果）</h3>
+            <div class="user-item">
+                <strong>用户名:</strong> admin 
+                <strong>密码:</strong> password
+                <span class="quick-login" onclick="quickLogin('admin', 'password')">快速登录</span>
+            </div>
+            <div class="user-item">
+                <strong>用户名:</strong> QQQ 
+                <strong>密码:</strong> 123456
+                <span class="quick-login" onclick="quickLogin('QQQ', '123456')">快速登录</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 手动登录测试</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名:</label>
+                <input type="text" id="username" name="username" value="admin" placeholder="请输入用户名">
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码:</label>
+                <input type="password" id="password" name="password" value="password" placeholder="请输入密码">
+            </div>
+
+            <button type="submit">🚀 登录测试</button>
+            <button type="button" onclick="checkServiceStatus()">🏥 检查服务状态</button>
+            <button type="button" onclick="checkNetworkConnectivity()">🌐 网络连接测试</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>📊 诊断信息</h2>
+        <button onclick="showDiagnostics()">📋 显示浏览器诊断信息</button>
+        <div id="diagnostics" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        const resultDiv = document.getElementById('result');
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await attemptLogin();
+        });
+
+        function quickLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            attemptLogin();
+        }
+
+        async function attemptLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            showResult('🔄 正在尝试登录...', 'info');
+            
+            try {
+                console.log('尝试登录:', { username, passwordLength: password.length });
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                console.log('响应状态:', response.status);
+                const data = await response.json();
+                console.log('响应数据:', data);
+
+                if (response.ok && data.success) {
+                    showResult(`✅ 登录成功！
+
+用户信息:
+${JSON.stringify(data.data.user, null, 2)}
+
+Token信息:
+- AccessToken: ${data.data.accessToken ? '已获取' : '未获取'}
+- RefreshToken: ${data.data.refreshToken ? '已获取' : '未获取'}`, 'success');
+                    
+                    // 保存token到localStorage
+                    if (data.data.accessToken) {
+                        localStorage.setItem('accessToken', data.data.accessToken);
+                        localStorage.setItem('refreshToken', data.data.refreshToken);
+                        console.log('Token已保存到localStorage');
+                    }
+                } else {
+                    showResult(`❌ 登录失败
+
+错误信息: ${data.message || '未知错误'}
+状态码: ${response.status}
+
+完整响应:
+${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                console.error('登录请求失败:', error);
+                showResult(`❌ 网络请求失败
+
+错误信息: ${error.message}
+
+可能原因:
+1. 后端服务未启动
+2. 网络连接问题
+3. CORS配置问题
+4. API频率限制`, 'error');
+            }
+        }
+
+        async function checkServiceStatus() {
+            showResult('🔄 检查服务状态...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/../health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ 后端服务正常运行\n\n健康检查结果:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`⚠️ 后端服务异常\n\n状态码: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ 无法连接到后端服务
+
+错误: ${error.message}
+
+请检查:
+1. 后端服务是否在端口3000运行
+2. 防火墙设置
+3. 网络连接`, 'error');
+            }
+        }
+
+        async function checkNetworkConnectivity() {
+            showResult('🔄 测试网络连接...', 'info');
+            
+            const tests = [
+                { name: '本地回环', url: 'http://localhost:3000/api/../health' },
+                { name: '127.0.0.1', url: 'http://127.0.0.1:3000/api/../health' }
+            ];
+            
+            let results = '🌐 网络连接测试结果:\n\n';
+            
+            for (const test of tests) {
+                try {
+                    const start = Date.now();
+                    const response = await fetch(test.url);
+                    const end = Date.now();
+                    const duration = end - start;
+                    
+                    if (response.ok) {
+                        results += `✅ ${test.name}: 连接成功 (${duration}ms)\n`;
+                    } else {
+                        results += `⚠️ ${test.name}: HTTP ${response.status}\n`;
+                    }
+                } catch (error) {
+                    results += `❌ ${test.name}: 连接失败 - ${error.message}\n`;
+                }
+            }
+            
+            showResult(results, 'info');
+        }
+
+        function showDiagnostics() {
+            const diagnosticsDiv = document.getElementById('diagnostics');
+            
+            const info = {
+                浏览器: navigator.userAgent,
+                页面URL: window.location.href,
+                localStorage可用: typeof(Storage) !== "undefined",
+                现有Token: {
+                    accessToken: localStorage.getItem('accessToken') ? '存在' : '不存在',
+                    refreshToken: localStorage.getItem('refreshToken') ? '存在' : '不存在'
+                },
+                Cookies: document.cookie || '无',
+                网络状态: navigator.onLine ? '在线' : '离线',
+                时间戳: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+            };
+            
+            diagnosticsDiv.innerHTML = JSON.stringify(info, null, 2);
+            diagnosticsDiv.className = 'result info';
+            diagnosticsDiv.style.display = 'block';
+        }
+
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        // 页面加载时自动显示诊断信息
+        window.addEventListener('load', () => {
+            console.log('🔧 登录诊断工具已加载');
+            console.log('API基础地址:', API_BASE);
+        });
+    </script>
+</body>
+</html>

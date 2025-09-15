@@ -20,7 +20,7 @@ class ProductController {
   // 获取产品列表
   static async getList(req, res) {
     try {
-      const { page, limit } = parsePaginationParams(req);
+      const { page, limit, offset } = parsePaginationParams(req);
       const { field: sortBy, order: sortOrder } = parseSortParams(req, ['id', 'name', 'model', 'operator', 'created_at', 'updated_at']);
       const search = req.query.search || '';
 
@@ -113,9 +113,9 @@ class ProductController {
   // 根据运营商获取产品
   static async getByOperator(req, res) {
     try {
-      const { operator } = req.params;
-      const products = await ProductModel.findByOperator(operator);
-      res.json(successResponse('获取运营商产品成功', products));
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了operator字段
+      // 但为了保持向后兼容性，我们返回空数组
+      res.json(successResponse('获取运营商产品成功', []));
     } catch (error) {
       console.error('获取运营商产品错误:', error);
       res.status(500).json(errorResponse('获取运营商产品失败', 'GET_PRODUCTS_BY_OPERATOR_FAILED'));
@@ -125,8 +125,9 @@ class ProductController {
   // 获取运营商列表
   static async getOperators(req, res) {
     try {
-      const operators = await ProductModel.getOperators();
-      res.json(successResponse('获取运营商列表成功', operators));
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了operator字段
+      // 但为了保持向后兼容性，我们返回空数组
+      res.json(successResponse('获取运营商列表成功', []));
     } catch (error) {
       console.error('获取运营商列表错误:', error);
       res.status(500).json(errorResponse('获取运营商列表失败', 'GET_OPERATORS_FAILED'));
@@ -136,8 +137,9 @@ class ProductController {
   // 获取供应商列表（从产品表）
   static async getSuppliers(req, res) {
     try {
-      const suppliers = await ProductModel.getSuppliers();
-      res.json(successResponse('获取供应商列表成功', suppliers));
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了supplier字段
+      // 但为了保持向后兼容性，我们返回空数组
+      res.json(successResponse('获取供应商列表成功', []));
     } catch (error) {
       console.error('获取供应商列表错误:', error);
       res.status(500).json(errorResponse('获取供应商列表失败', 'GET_SUPPLIERS_FAILED'));
@@ -147,8 +149,9 @@ class ProductController {
   // 获取快递公司列表
   static async getCouriers(req, res) {
     try {
-      const couriers = await ProductModel.getCouriers();
-      res.json(successResponse('获取快递公司列表成功', couriers));
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了courier_company字段
+      // 但为了保持向后兼容性，我们返回空数组
+      res.json(successResponse('获取快递公司列表成功', []));
     } catch (error) {
       console.error('获取快递公司列表错误:', error);
       res.status(500).json(errorResponse('获取快递公司列表失败', 'GET_COURIERS_FAILED'));

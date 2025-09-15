@@ -1,6 +1,6 @@
 // 快递公司相关API
 import api from './api';
-import { ApiResponse, PaginationParams, PaginationResponse } from '../types/api';
+import type { ApiResponse, PaginatedResponse } from '../types';
 
 export interface Courier {
   id?: number;
@@ -17,13 +17,15 @@ export interface Courier {
   updated_at?: string;
 }
 
-export interface CourierListResponse extends PaginationResponse {
-  data: Courier[];
-}
+export interface CourierListResponse extends PaginatedResponse<Courier> {}
 
 export const courierService = {
   // 获取快递公司列表
-  async getList(params?: PaginationParams): Promise<CourierListResponse> {
+  async getList(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<CourierListResponse> {
     const response = await api.get('/couriers', { params });
     return response.data;
   },

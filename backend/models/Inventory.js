@@ -35,7 +35,7 @@ class InventoryModel {
         product_id, product_name, product_model, product_description, operator,
         imei, batch_number, stock_in_quantity, '已入库', '正常',
         '正常', '正常', stock_in_auto_number, supplier,
-        factory_name, factory_order, stock_in_date || new Date(), stock_in_contract_number,
+        factory_name, factory_order, stock_in_date || new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }), stock_in_contract_number,
         stock_in_document, stock_in_by, stock_in_notes, stock_in_quantity, 'in'
       ];
 

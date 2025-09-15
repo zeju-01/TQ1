@@ -13,7 +13,7 @@ const handleValidationErrors = (req, res, next) => {
       success: false,
       message: '输入数据验证失败',
       errors: errors.array(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
     });
   }
   next();

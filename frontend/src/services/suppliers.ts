@@ -1,12 +1,9 @@
 import api from './api';
 import type { Supplier } from '../types';
+import type { PaginatedResponse } from '../types'; // 导入分页响应类型
 
-export interface SupplierListResponse {
-  data: Supplier[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+// 更新供应商列表响应类型，使用与运营商和快递公司相同的分页结构
+export interface SupplierListResponse extends PaginatedResponse<Supplier> {}
 
 export interface CreateSupplierRequest {
   company_name: string;
@@ -27,7 +24,7 @@ export const supplierService = {
   // 获取供应商列表
   async getList(params?: {
     page?: number;
-    pageSize?: number;
+    limit?: number;
     search?: string;
   }): Promise<SupplierListResponse> {
     const response = await api.get('/suppliers', { params });

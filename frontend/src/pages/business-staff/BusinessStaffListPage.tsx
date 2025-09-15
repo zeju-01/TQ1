@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { businessStaffService } from '../../services/businessStaff';
+import { formatToBeijingTime } from '../../utils/date';
 import type { BusinessStaff } from '../../types';
 
 const { Search } = Input;
@@ -43,6 +44,7 @@ const BusinessStaffListPage: React.FC = () => {
     current: 1,
     pageSize: 10
   });
+  const [searchText, setSearchText] = useState('');
 
   // 加载业务人员数据
   const loadBusinessStaff = async () => {
@@ -50,10 +52,11 @@ const BusinessStaffListPage: React.FC = () => {
       setLoading(true);
       const response = await businessStaffService.getList({
         page: pagination.current,
-        pageSize: pagination.pageSize
+        limit: pagination.pageSize,
+        search: searchText
       });
       setStaffData(response.data);
-      setTotal(response.total);
+      setTotal(response.pagination.total); // 从pagination对象中获取total
     } catch (error) {
       console.error('加载业务人员数据失败:', error);
       message.error('加载业务人员数据失败');
@@ -64,7 +67,7 @@ const BusinessStaffListPage: React.FC = () => {
 
   useEffect(() => {
     loadBusinessStaff();
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, searchText]);
 
   const columns: ColumnsType<BusinessStaff> = [
     {
@@ -132,6 +135,13 @@ const BusinessStaffListPage: React.FC = () => {
       ellipsis: true
     },
     {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 120,
+      render: (text) => formatToBeijingTime(text)
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -141,12 +151,6 @@ const BusinessStaffListPage: React.FC = () => {
           {status === 'active' ? '在职' : '离职'}
         </Tag>
       )
-    },
-    {
-      title: '入职时间',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 120
     },
     {
       title: '操作',
@@ -257,8 +261,9 @@ const BusinessStaffListPage: React.FC = () => {
   };
 
   const handleSearch = (value: string) => {
-    console.log('搜索:', value);
-    // 这里实现搜索逻辑
+    setSearchText(value);
+    // 重置到第一页并重新加载数据
+    setPagination({ ...pagination, current: 1 });
   };
 
   return (
@@ -305,8 +310,12 @@ const BusinessStaffListPage: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total, range) => 
               `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onShowSizeChange: (current, size) => {
+              setPagination({ current: 1, pageSize: size });
+            },
             onChange: (page, pageSize) => {
-              setPagination({ current: page, pageSize: pageSize || 10 });
+              setPagination({ current: page, pageSize: pageSize || pagination.pageSize });
             }
           }}
         />

@@ -39,7 +39,7 @@ class UserModel {
   // 根据ID查找用户
   static async findById(id) {
     try {
-      const query = 'SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at FROM users WHERE id = ?';
+      const query = 'SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at, last_login FROM users WHERE id = ?';
       const result = await executeQuery(query, [id]);
       
       if (result.success && result.data.length > 0) {
@@ -54,7 +54,7 @@ class UserModel {
   // 根据用户名查找用户
   static async findByUsername(username) {
     try {
-      const query = 'SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at FROM users WHERE username = ?';
+      const query = 'SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at, last_login FROM users WHERE username = ?';
       const result = await executeQuery(query, [username]);
       
       if (result.success && result.data.length > 0) {
@@ -76,6 +76,17 @@ class UserModel {
         return result.data[0];
       }
       return null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // 更新最后登录时间
+  static async updateLastLogin(userId) {
+    try {
+      const query = 'UPDATE users SET last_login = datetime("now", "+8 hours") WHERE id = ?';
+      const result = await executeQuery(query, [userId]);
+      return result.success;
     } catch (error) {
       throw error;
     }
@@ -133,7 +144,7 @@ class UserModel {
   static async findAll(page = 1, limit = 20, search = '') {
     try {
       let query = `
-        SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at 
+        SELECT id, username, role, full_name, abbreviation, permission, remarks, created_at, updated_at, last_login
         FROM users
       `;
       let countQuery = 'SELECT COUNT(*) as total FROM users';

@@ -33,6 +33,7 @@ export interface User {
   remarks?: string;
   created_at: string;
   updated_at: string;
+  last_login?: string;
 }
 
 export interface LoginRequest {

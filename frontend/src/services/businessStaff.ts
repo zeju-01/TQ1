@@ -1,12 +1,9 @@
 import api from './api';
 import type { BusinessStaff } from '../types';
+import type { PaginatedResponse } from '../types'; // 导入分页响应类型
 
-export interface BusinessStaffListResponse {
-  data: BusinessStaff[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+// 更新业务人员列表响应类型，使用与供应商、运营商和快递公司相同的分页结构
+export interface BusinessStaffListResponse extends PaginatedResponse<BusinessStaff> {}
 
 export interface CreateBusinessStaffRequest {
   staff_name: string;
@@ -27,7 +24,7 @@ export const businessStaffService = {
   // 获取业务人员列表
   async getList(params?: {
     page?: number;
-    pageSize?: number;
+    limit?: number;
     search?: string;
   }): Promise<BusinessStaffListResponse> {
     const response = await api.get('/business-staff', { params });

@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { productService } from '../../services/products';
+import { formatToBeijingTime } from '../../utils/date';
 import type { Product } from '../../types';
 
 const { Search } = Input;
@@ -38,6 +39,14 @@ const ProductListPage: React.FC = () => {
     current: 1,
     pageSize: 10
   });
+  const [searchText, setSearchText] = useState('');
+
+  const handleSearch = (value: string) => {
+    console.log('搜索:', value);
+    // 搜索时重置到第一页，但保持pageSize不变
+    setSearchText(value);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
 
   // 加载产品数据
   const loadProducts = async () => {
@@ -45,7 +54,8 @@ const ProductListPage: React.FC = () => {
       setLoading(true);
       const response = await productService.getList({
         page: pagination.current,
-        pageSize: pagination.pageSize
+        limit: pagination.pageSize,
+        search: searchText
       });
       setProductData(response.data);
       setTotal(response.total);
@@ -59,7 +69,7 @@ const ProductListPage: React.FC = () => {
 
   useEffect(() => {
     loadProducts();
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, searchText]);
 
   const columns: ColumnsType<Product> = [
     {
@@ -96,7 +106,8 @@ const ProductListPage: React.FC = () => {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 120
+      width: 120,
+      render: (text) => formatToBeijingTime(text)
     },
     {
       title: '操作',
@@ -150,6 +161,7 @@ const ProductListPage: React.FC = () => {
       setLoading(true);
       await productService.delete(id);
       message.success('删除成功！');
+      // 删除成功后保持在当前页
       await loadProducts();
     } catch (error) {
       console.error('删除失败:', error);
@@ -176,6 +188,7 @@ const ProductListPage: React.FC = () => {
       
       setIsModalVisible(false);
       form.resetFields();
+      // 操作成功后保持在当前页
       await loadProducts();
     } catch (error) {
       console.error('提交失败:', error);
@@ -183,11 +196,6 @@ const ProductListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSearch = (value: string) => {
-    console.log('搜索:', value);
-    // 这里实现搜索逻辑
   };
 
   return (
@@ -235,8 +243,18 @@ const ProductListPage: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total, range) => 
               `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onShowSizeChange: (current, size) => {
+              setPagination({ 
+                current: 1, // 当pageSize改变时，重置到第一页
+                pageSize: size 
+              });
+            },
             onChange: (page, pageSize) => {
-              setPagination({ current: page, pageSize: pageSize || 10 });
+              setPagination({ 
+                current: page, 
+                pageSize: pageSize || pagination.pageSize 
+              });
             }
           }}
         />

@@ -28,6 +28,7 @@ import {
   UndoOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { formatToBeijingTime } from '../../utils/date'; // 添加时间格式化函数导入
 
 const { Search } = Input;
 const { Option } = Select;
@@ -129,6 +130,7 @@ const InventoryListPage: React.FC = () => {
       title: '入库日期',
       dataIndex: 'stock_in_date',
       key: 'stock_in_date',
+      render: (text) => formatToBeijingTime(text) // 添加时间格式化
     },
     {
       title: '入库状态',
@@ -346,7 +348,16 @@ const InventoryListPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
-              `第 ${range[0]}-${range[1]} 条/共 ${total} 条`
+              `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onShowSizeChange: (current, size) => {
+              // 当pageSize改变时的处理逻辑
+              console.log('Page size changed to:', size);
+            },
+            onChange: (page, pageSize) => {
+              // 当页码改变时的处理逻辑
+              console.log('Page changed to:', page, 'Page size:', pageSize);
+            }
           }}
         />
       </Card>

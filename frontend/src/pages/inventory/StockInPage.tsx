@@ -228,7 +228,12 @@ const StockInPage: React.FC = () => {
 
   // 生成入库编号
   const generateStockInNumber = () => {
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const today = new Date().toLocaleDateString('zh-CN', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      timeZone: 'Asia/Shanghai'
+    }).replace(/\//g, '');
     const random = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
     return `IN${today}${random}`;
   };

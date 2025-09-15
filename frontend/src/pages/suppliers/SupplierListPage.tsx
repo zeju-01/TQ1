@@ -67,10 +67,10 @@ const SupplierListPage: React.FC = () => {
       setLoading(true);
       const response = await supplierService.getList({
         page: pagination.current,
-        pageSize: pagination.pageSize
+        limit: pagination.pageSize
       });
       setSupplierData(response.data);
-      setTotal(response.total);
+      setTotal(response.pagination.total);
     } catch (error) {
       console.error('加载供应商数据失败:', error);
       message.error('加载供应商数据失败');
@@ -88,7 +88,7 @@ const SupplierListPage: React.FC = () => {
       });
       setOperatorData(response.data);
       // 使用数组长度作为总数，后续可以根据实际API响应调整
-      setOperatorTotal(response.data.length);
+      setOperatorTotal(response.pagination.total);
     } catch (error) {
       console.error('加载运营商数据失败:', error);
       message.error('加载运营商数据失败');
@@ -106,7 +106,7 @@ const SupplierListPage: React.FC = () => {
       });
       setCourierData(response.data);
       // 使用数组长度作为总数，后续可以根据实际API响应调整
-      setCourierTotal(response.data.length);
+      setCourierTotal(response.pagination.total);
     } catch (error) {
       console.error('加载快递公司数据失败:', error);
       message.error('加载快递公司数据失败');
@@ -246,44 +246,9 @@ const SupplierListPage: React.FC = () => {
       
       setIsModalVisible(false);
       form.resetFields();
-    } catch (error: any) {
+    } catch (error) {
       console.error('提交失败:', error);
-      
-      // 检查是否是网络错误
-      if (!error.response) {
-        message.error('网络连接失败，请检查网络连接');
-        return;
-      }
-      
-      const { status, data } = error.response;
-      
-      // 显示详细错误信息
-      if (data && data.errors && data.errors.length > 0) {
-        const errorMessages = data.errors.map((err: any) => err.msg || err.message).join('; ');
-        message.error(`输入数据验证失败: ${errorMessages}`);
-      } else if (data && data.message) {
-        message.error(data.message);
-      } else {
-        switch (status) {
-          case 400:
-            message.error('请求参数错误，请检查输入内容');
-            break;
-          case 401:
-            message.error('未授权，请重新登录');
-            break;
-          case 403:
-            message.error('权限不足');
-            break;
-          case 409:
-            message.error('数据已存在，请检查后重试');
-            break;
-          case 500:
-            message.error('服务器内部错误，请稍后重试');
-            break;
-          default:
-            message.error('提交失败，请稍后重试');
-        }
-      }
+      message.error('提交失败，请检查网络连接或联系管理员');
     } finally {
       setLoading(false);
     }
@@ -563,7 +528,7 @@ const SupplierListPage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="邮箱地址" name="email">
+              <Form.Item label="邮箱地址" name="email" rules={[{ type: 'email', message: '请输入正确的邮箱格式' }]}>
                 <Input placeholder="请输入邮箱地址" />
               </Form.Item>
             </Col>
@@ -605,7 +570,7 @@ const SupplierListPage: React.FC = () => {
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="邮箱地址" name="email">
+              <Form.Item label="邮箱地址" name="email" rules={[{ type: 'email', message: '请输入正确的邮箱格式' }]}>
                 <Input placeholder="请输入邮箱地址" />
               </Form.Item>
             </Col>
@@ -649,7 +614,7 @@ const SupplierListPage: React.FC = () => {
           </Row>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="邮箱地址" name="email">
+              <Form.Item label="邮箱地址" name="email" rules={[{ type: 'email', message: '请输入正确的邮箱格式' }]}>
                 <Input placeholder="请输入邮箱地址" />
               </Form.Item>
             </Col>
@@ -659,7 +624,7 @@ const SupplierListPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="跟踪网址" name="tracking_url">
+          <Form.Item label="跟踪网址" name="tracking_url" rules={[{ type: 'url', message: '请输入正确的网址格式' }]}>
             <Input placeholder="请输入快递跟踪网址" />
           </Form.Item>
           <Form.Item label="描述" name="description">

@@ -29,6 +29,9 @@ const initDatabase = async () => {
     // 启用外键约束
     await db.exec('PRAGMA foreign_keys = ON');
     
+    // 设置时区为北京时间
+    await db.exec("PRAGMA time_zone = '+08:00'");
+    
     // 创建所需的表结构
     await createTables();
     console.log(`SQLite持久化数据库初始化成功，数据文件: ${DB_PATH}`);
@@ -52,8 +55,8 @@ const createTables = async () => {
       abbreviation VARCHAR(20),
       permission VARCHAR(20) DEFAULT 'view',
       remarks TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -65,12 +68,8 @@ const createTables = async () => {
       model VARCHAR(50),
       description TEXT,
       abbreviation VARCHAR(20),
-      operator VARCHAR(50),
-      supplier VARCHAR(100),
-      salesperson VARCHAR(50),
-      courier_company VARCHAR(50),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -86,8 +85,8 @@ const createTables = async () => {
       contact_info VARCHAR(200),
       other_info TEXT,
       status VARCHAR(20) DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -103,8 +102,8 @@ const createTables = async () => {
       email VARCHAR(100),
       contact_info VARCHAR(200),
       status VARCHAR(20) DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -120,8 +119,8 @@ const createTables = async () => {
       email VARCHAR(100),
       address VARCHAR(255),
       status VARCHAR(20) DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -138,13 +137,13 @@ const createTables = async () => {
       address VARCHAR(255),
       tracking_url VARCHAR(255),
       status VARCHAR(20) DEFAULT 'active',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
   // 插入一些测试数据（仅在数据库为空时插入）
-  const supplierCount = await db.get('SELECT COUNT(*) as count FROM suppliers');
+  /*const supplierCount = await db.get('SELECT COUNT(*) as count FROM suppliers');
   if (supplierCount.count === 0) {
     await db.run(`INSERT INTO suppliers (company_name, contact_person, phone, email, address, contact_info, other_info) VALUES 
       ('深圳移远通信技术股份有限公司', '张经理', '0755-86380030', 'sales@quectel.com', '深圳市南山区科技园', '电话: 0755-86380030', '全球领先的物联网模组供应商'),
@@ -165,12 +164,12 @@ const createTables = async () => {
 
   // 插入产品测试数据
   await db.run(`
-    INSERT OR IGNORE INTO products (name, model, description, abbreviation, operator, supplier, salesperson, courier_company) VALUES 
-    ('4G LTE Cat.1模组', 'EC200U-CN', '高性能4G LTE Cat.1通信模组，支持中国移动/联通/电信网络', 'EC200U', '中国移动', '移远通信', '陈晓明', '顺丰速运'),
-    ('4G LTE Cat.4模组', 'EC600U-CN', '高速4G LTE Cat.4通信模组，下载速度150Mbps', 'EC600U', '中国联通', '移远通信', '刘佳丽', '中通快递'),
-    ('NB-IoT模组', 'BC26', '低功耗广域网NB-IoT通信模组', 'BC26', '中国电信', '移远通信', '张伟强', '圆通快递'),
-    ('2G GSM模组', 'M26', '成熟稳定的2G GSM通信模组', 'M26', '中国移动', '移远通信', '王丽华', '申通快递'),
-    ('5G Sub-6GHz模组', 'RG500Q-EA', '5G Sub-6GHz高速通信模组', 'RG500Q', '中国移动', '移远通信', '李建国', '韵达快递')
+    INSERT OR IGNORE INTO products (name, model, description, abbreviation) VALUES 
+    ('4G LTE Cat.1模组', 'EC200U-CN', '高性能4G LTE Cat.1通信模组，支持中国移动/联通/电信网络', 'EC200U'),
+    ('4G LTE Cat.4模组', 'EC600U-CN', '高速4G LTE Cat.4通信模组，下载速度150Mbps', 'EC600U'),
+    ('NB-IoT模组', 'BC26', '低功耗广域网NB-IoT通信模组', 'BC26'),
+    ('2G GSM模组', 'M26', '成熟稳定的2G GSM通信模组', 'M26'),
+    ('5G Sub-6GHz模组', 'RG500Q-EA', '5G Sub-6GHz高速通信模组', 'RG500Q')
   `);
 
   // 插入运营商测试数据
@@ -190,7 +189,7 @@ const createTables = async () => {
     ('申通快递', 'STO', '申通快递股份有限公司', '陈经理', '95543', 'service@sto.cn', '上海市奉贤区银春路1688号', 'https://www.sto.cn/'),
     ('韵达快递', 'YUNDA', '韵达股份有限公司', '刘主任', '95546', 'service@yunda.co', '上海市青浦区华徐公路1568号', 'https://www.yunda.co/')
   `);
-
+*/
   // 库存表
   await db.exec(`
     CREATE TABLE IF NOT EXISTS inventory (
@@ -212,11 +211,11 @@ const createTables = async () => {
       supplier VARCHAR(100),
       factory_name VARCHAR(100),
       factory_order VARCHAR(50),
-      stock_in_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      stock_in_date DATETIME DEFAULT (datetime('now', '+8 hours')),
       stock_in_contract_number VARCHAR(50),
       stock_in_document VARCHAR(100),
       stock_in_document_path VARCHAR(255),
-      stock_in_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      stock_in_time DATETIME DEFAULT (datetime('now', '+8 hours')),
       stock_in_by VARCHAR(50),
       return_time DATETIME,
       returned_by INTEGER,
@@ -244,8 +243,8 @@ const createTables = async () => {
       quantity INTEGER,
       transaction_type VARCHAR(10) NOT NULL,
       customer VARCHAR(100),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
+      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
     )
   `);
 
@@ -254,10 +253,21 @@ const createTables = async () => {
     INSERT OR IGNORE INTO users (username, password, role, full_name, permission) 
     VALUES ('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', '系统管理员', 'admin')
   `);
+  
+  // 插入默认superadmin用户
+  await db.run(`
+    INSERT OR IGNORE INTO users (username, password, role, full_name, permission) 
+    VALUES ('superadmin', '$2b$10$mByZQ7y3HdGnuXTcmNt/zuQjJOa5T4gOVF9iaelPA1Tpb1bW47Lq2', 'admin', '超级管理员', 'admin')
+  `);
 
   // 更新已存在的admin用户角色（为了兼容之前的数据）
   await db.run(`
     UPDATE users SET role = 'admin', permission = 'admin' WHERE username = 'admin'
+  `);
+  
+  // 更新已存在的superadmin用户角色（为了兼容之前的数据）
+  await db.run(`
+    UPDATE users SET role = 'admin', permission = 'admin' WHERE username = 'superadmin'
   `);
 };
 
@@ -337,7 +347,12 @@ const getNextSequence = async (sequenceName) => {
 // 生成入库自动编号
 const generateStockInNumber = async () => {
   try {
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const today = new Date().toLocaleDateString('zh-CN', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      timeZone: 'Asia/Shanghai'
+    }).replace(/\//g, '');
     const result = await db.get(
       `SELECT COALESCE(MAX(CAST(SUBSTR(stock_in_auto_number, -6) AS INTEGER)), 0) + 1 as seq 
        FROM inventory 
@@ -354,7 +369,12 @@ const generateStockInNumber = async () => {
 // 生成出库自动编号
 const generateStockOutNumber = async () => {
   try {
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const today = new Date().toLocaleDateString('zh-CN', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      timeZone: 'Asia/Shanghai'
+    }).replace(/\//g, '');
     const result = await db.get(
       `SELECT COALESCE(MAX(CAST(SUBSTR(stock_out_number, -6) AS INTEGER)), 0) + 1 as seq 
        FROM inventory 

@@ -97,9 +97,14 @@ class ProductModel {
   // 获取所有产品（分页）
   static async findAll(page = 1, limit = 20, search = '', sortBy = 'id', sortOrder = 'asc') {
     try {
+      // 确保limit和page是有效数字
+      const validLimit = Math.min(100, Math.max(1, parseInt(limit) || 20));
+      const validPage = Math.max(1, parseInt(page) || 1);
+      
       let query = 'SELECT * FROM products';
       let countQuery = 'SELECT COUNT(*) as total FROM products';
       const params = [];
+      const countParams = [];
 
       // 添加搜索条件
       if (search) {
@@ -107,6 +112,7 @@ class ProductModel {
         query += searchCondition;
         countQuery += searchCondition;
         params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
       // 添加排序
@@ -116,22 +122,20 @@ class ProductModel {
       query += ` ORDER BY ${sortField} ${sortDirection}`;
 
       // 添加分页
-      const offset = (page - 1) * limit;
+      const offset = (validPage - 1) * validLimit;
       query += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      params.push(validLimit, offset);
 
       // 执行查询
-      const [dataResult, countResult] = await Promise.all([
-        executeQuery(query, params),
-        executeQuery(countQuery, search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [])
-      ]);
+      const countResult = await executeQuery(countQuery, countParams);
+      const dataResult = await executeQuery(query, params);
 
       if (dataResult.success && countResult.success) {
         return {
           products: dataResult.data,
           total: countResult.data[0].total,
-          page,
-          limit
+          page: validPage,
+          limit: validLimit
         };
       } else {
         throw new Error('查询产品列表失败');
@@ -198,14 +202,9 @@ class ProductModel {
   // 根据运营商获取产品
   static async findByOperator(operator) {
     try {
-      const query = 'SELECT * FROM products WHERE operator = ? ORDER BY name';
-      const result = await executeQuery(query, [operator]);
-      
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error('获取运营商产品失败');
-      }
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了operator字段
+      // 但为了保持向后兼容性，我们返回空数组
+      return [];
     } catch (error) {
       throw error;
     }
@@ -214,14 +213,9 @@ class ProductModel {
   // 获取所有运营商列表
   static async getOperators() {
     try {
-      const query = 'SELECT DISTINCT operator FROM products WHERE operator IS NOT NULL AND operator != "" ORDER BY operator';
-      const result = await executeQuery(query);
-      
-      if (result.success) {
-        return result.data.map(row => row.operator);
-      } else {
-        throw new Error('获取运营商列表失败');
-      }
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了operator字段
+      // 但为了保持向后兼容性，我们返回空数组
+      return [];
     } catch (error) {
       throw error;
     }
@@ -230,14 +224,9 @@ class ProductModel {
   // 获取所有供应商列表（从产品表）
   static async getSuppliers() {
     try {
-      const query = 'SELECT DISTINCT supplier FROM products WHERE supplier IS NOT NULL AND supplier != "" ORDER BY supplier';
-      const result = await executeQuery(query);
-      
-      if (result.success) {
-        return result.data.map(row => row.supplier);
-      } else {
-        throw new Error('获取供应商列表失败');
-      }
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了supplier字段
+      // 但为了保持向后兼容性，我们返回空数组
+      return [];
     } catch (error) {
       throw error;
     }
@@ -246,14 +235,9 @@ class ProductModel {
   // 获取所有快递公司列表
   static async getCouriers() {
     try {
-      const query = 'SELECT DISTINCT courier_company FROM products WHERE courier_company IS NOT NULL AND courier_company != "" ORDER BY courier_company';
-      const result = await executeQuery(query);
-      
-      if (result.success) {
-        return result.data.map(row => row.courier_company);
-      } else {
-        throw new Error('获取快递公司列表失败');
-      }
+      // 注意：这个方法现在可能不再需要，因为我们已经移除了courier_company字段
+      // 但为了保持向后兼容性，我们返回空数组
+      return [];
     } catch (error) {
       throw error;
     }

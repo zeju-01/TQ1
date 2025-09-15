@@ -3,7 +3,7 @@ const createResponse = (success, message, data = null, code = null) => {
   const response = {
     success,
     message,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
   };
 
   if (data !== null) {
@@ -34,7 +34,7 @@ const paginatedResponse = (message, data, pagination) => {
     message,
     data,
     pagination,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
   };
 };
 

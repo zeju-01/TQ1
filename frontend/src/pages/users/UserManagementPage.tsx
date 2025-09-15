@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { usersApi, CreateUserRequest, UpdateUserRequest, ResetPasswordRequest } from '@/services/users';
+import { formatToBeijingTime } from '@/utils/date';
 import { User, PaginatedResponse } from '@/types';
 
 const { Search } = Input;
@@ -37,7 +38,7 @@ const { TextArea } = Input;
 // 用户状态接口（扩展基础User类型）
 interface UserWithStatus extends User {
   status: 'active' | 'inactive';
-  last_login: string;
+  last_login?: string;
 }
 
 const UserManagementPage: React.FC = () => {
@@ -62,11 +63,10 @@ const UserManagementPage: React.FC = () => {
       const response = await usersApi.getList({ page, limit, search });
       
       if (response.success) {
-        // 为用户数据添加状态和最后登录时间（模拟数据）
+        // 为用户数据添加状态（使用真实的last_login数据）
         const usersWithStatus = response.data.map(user => ({
           ...user,
-          status: 'active' as const,
-          last_login: '2024-09-14 13:30:00'
+          status: 'active' as const
         }));
         
         setUserData(usersWithStatus);
@@ -179,6 +179,13 @@ const UserManagementPage: React.FC = () => {
       )
     },
     {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 120,
+      render: (text) => formatToBeijingTime(text)
+    },
+    {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
@@ -196,7 +203,8 @@ const UserManagementPage: React.FC = () => {
       title: '最后登录',
       dataIndex: 'last_login',
       key: 'last_login',
-      width: 150
+      width: 150,
+      render: (text) => text ? formatToBeijingTime(text) : '从未登录'
     },
     {
       title: '备注',
@@ -289,7 +297,7 @@ const UserManagementPage: React.FC = () => {
       setUserData(prev => 
         prev.map(item => 
           item.id === id 
-            ? { ...item, status: checked ? 'active' : 'inactive', updated_at: new Date().toISOString().split('T')[0] }
+            ? { ...item, status: checked ? 'active' : 'inactive', updated_at: new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }) }
             : item
         )
       );
@@ -471,9 +479,27 @@ const UserManagementPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
-              `第 ${range[0]}-${range[1]} 条/共 ${total} 条`
+              `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            onShowSizeChange: (current, size) => {
+              setPagination({ 
+                current: 1, // 当pageSize改变时，重置到第一页
+                pageSize: size,
+                total: pagination.total
+              });
+              // 当pageSize改变时，重新加载数据
+              loadUsers(1, size, searchText);
+            },
+            onChange: (page, pageSize) => {
+              setPagination({ 
+                current: page, 
+                pageSize: pageSize || pagination.pageSize,
+                total: pagination.total
+              });
+              // 当页码改变时，重新加载数据
+              loadUsers(page, pageSize || pagination.pageSize, searchText);
+            }
           }}
-          onChange={handleTableChange}
         />
       </Card>
 

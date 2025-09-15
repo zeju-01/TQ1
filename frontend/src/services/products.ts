@@ -2,10 +2,18 @@ import api from './api';
 import type { Product } from '../types';
 
 export interface ProductListResponse {
+  success: boolean;
+  message: string;
   data: Product[];
-  total: number;
-  page: number;
-  pageSize: number;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  timestamp: string;
 }
 
 export interface CreateProductRequest {
@@ -23,11 +31,21 @@ export const productService = {
   // 获取产品列表
   async getList(params?: {
     page?: number;
-    pageSize?: number;
+    limit?: number;
     search?: string;
-  }): Promise<ProductListResponse> {
-    const response = await api.get('/products', { params });
-    return response.data;
+  }): Promise<{ data: Product[]; total: number }> {
+    // 将前端的pageSize转换为后端的limit
+    const backendParams = {
+      page: params?.page,
+      limit: params?.limit,
+      search: params?.search
+    };
+    
+    const response = await api.get('/products', { params: backendParams });
+    return {
+      data: response.data.data,
+      total: response.data.pagination.total
+    };
   },
 
   // 获取单个产品

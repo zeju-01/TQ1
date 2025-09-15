@@ -8,24 +8,36 @@ class AuthController {
   static async login(req, res) {
     try {
       const { username, password } = req.body;
+      console.log('登录请求:', { username, password });
 
       // 查找用户（包含密码）
       const user = await UserModel.findByUsernameWithPassword(username);
+      console.log('查找用户结果:', user);
       if (!user) {
+        console.log('用户不存在');
         return res.status(401).json(errorResponse('用户名或密码错误', 'INVALID_CREDENTIALS'));
       }
 
       // 验证密码
       const isPasswordValid = await UserModel.validatePassword(password, user.password);
+      console.log('密码验证结果:', isPasswordValid);
       if (!isPasswordValid) {
         return res.status(401).json(errorResponse('用户名或密码错误', 'INVALID_CREDENTIALS'));
       }
 
+      // 更新最后登录时间
+      console.log('更新用户ID为', user.id, '的最后登录时间');
+      await UserModel.updateLastLogin(user.id);
+
+      // 重新获取用户信息（包含更新的last_login字段）
+      const updatedUser = await UserModel.findById(user.id);
+      console.log('更新后的用户信息:', updatedUser);
+
       // 生成令牌对
-      const tokens = generateTokenPair(user);
+      const tokens = generateTokenPair(updatedUser);
 
       // 移除密码字段
-      const { password: _, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = updatedUser;
 
       res.json(successResponse('登录成功', {
         user: userWithoutPassword,

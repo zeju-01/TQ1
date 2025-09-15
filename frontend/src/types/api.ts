@@ -13,15 +13,17 @@ export interface PaginationParams {
   search?: string;
 }
 
-// 分页响应
+// 分页响应 - 更新字段名以匹配实际API响应
 export interface PaginationResponse {
   success: boolean;
   message: string;
   pagination: {
-    current_page: number;
-    total_pages: number;
-    total_items: number;
-    per_page: number;
+    total: number;          // 更新字段名：total_items -> total
+    page: number;           // 更新字段名：current_page -> page
+    limit: number;          // 更新字段名：per_page -> limit
+    totalPages: number;     // 更新字段名：total_pages -> totalPages
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 

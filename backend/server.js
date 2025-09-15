@@ -8,12 +8,16 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// 设置时区为北京时间
+process.env.TZ = 'Asia/Shanghai';
+
 // 导入配置和中间件
 const { testConnection } = require('./config/database');
 
 // 创建Express应用
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001; // 更改端口号为3001
+const HOST = process.env.HOST || 'localhost';
 
 // 安全中间件
 app.use(helmet({
@@ -67,7 +71,7 @@ app.use('/api/upload', require('./routes/upload'));
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
   });
@@ -78,7 +82,7 @@ app.get('/api', (req, res) => {
   res.json({
     message: '互联网模组出入库管理系统 API',
     version: '1.0.0',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
@@ -147,7 +151,7 @@ const startServer = async () => {
     }
 
     // 启动HTTP服务器
-    app.listen(PORT, () => {
+    app.listen(PORT, HOST, () => {
       console.log('=================================');
       console.log('🚀 互联网模组出入库管理系统后端服务器已启动');
       console.log(`📡 服务端口: ${PORT}`);
