@@ -185,7 +185,8 @@ class OperatorModel {
   // 获取运营商选项列表（用于下拉框）
   static async getOptions() {
     try {
-      const query = 'SELECT id, name, code FROM operators WHERE status = "active" ORDER BY name';
+      // 修改查询语句，按名称去重并只获取活跃状态的运营商
+      const query = 'SELECT id, name, code FROM operators WHERE status = "active" GROUP BY name ORDER BY name';
       const result = await executeQuery(query);
       
       if (result.success) {

@@ -29,8 +29,16 @@ export const operatorService = {
 
   // 获取运营商选项
   async getOptions(): Promise<ApiResponse<Operator[]>> {
-    const response = await api.get('/operators/options');
-    return response.data;
+    try {
+      const response = await api.get('/operators/options');
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   },
 
   // 获取运营商详情

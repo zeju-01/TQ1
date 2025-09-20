@@ -26,7 +26,7 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif').split(',');
+    const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'pdf,doc,docx,xls,xlsx,csv,jpg,jpeg,png,gif').split(',');
     const fileExt = path.extname(file.originalname).toLowerCase().slice(1);
     
     if (allowedTypes.includes(fileExt)) {
@@ -97,13 +97,48 @@ class UploadController {
         return res.status(400).json(errorResponse('没有上传Excel文件', 'NO_EXCEL_UPLOADED'));
       }
 
-      // 读取Excel文件
-      const workbook = XLSX.readFile(req.file.path);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
+      let jsonData = [];
       
-      // 转换为JSON
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      // 检查文件扩展名
+      const fileExt = path.extname(req.file.originalname).toLowerCase();
+      
+      if (fileExt === '.csv') {
+        // 处理CSV文件，使用更 robust 的方式
+        const csvData = fs.readFileSync(req.file.path, 'utf8');
+        const lines = csvData.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length <= 1) {
+          return res.status(400).json(errorResponse('CSV文件为空', 'EMPTY_CSV_FILE'));
+        }
+        
+        // 解析CSV头部
+        const headers = lines[0].split(',').map(header => header.trim());
+        
+        // 解析数据行
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(value => value.trim());
+          if (values.length === headers.length) {
+            const row = {};
+            headers.forEach((header, index) => {
+              // 处理可能被引号包围的值
+              let value = values[index];
+              if (value.startsWith('"') && value.endsWith('"')) {
+                value = value.substring(1, value.length - 1);
+              }
+              row[header] = value;
+            });
+            jsonData.push(row);
+          }
+        }
+      } else {
+        // 处理Excel文件
+        const workbook = XLSX.readFile(req.file.path, {cellDates: true});
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // 转换为JSON，确保日期格式正确
+        jsonData = XLSX.utils.sheet_to_json(worksheet, {raw: false, dateNF: 'yyyy-mm-dd hh:mm:ss'});
+      }
       
       // 验证数据格式
       if (jsonData.length === 0) {

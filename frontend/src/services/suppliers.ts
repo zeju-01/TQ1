@@ -55,8 +55,16 @@ export const supplierService = {
   },
 
   // 获取供应商选项（用于下拉框）
-  async getOptions(): Promise<Array<{ label: string; value: number }>> {
-    const response = await api.get('/suppliers/options');
-    return response.data;
+  async getOptions(): Promise<{ success: boolean; message: string; data: Array<{ id: number; company_name: string }> }> {
+    try {
+      const response = await api.get('/suppliers/options');
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   }
 };

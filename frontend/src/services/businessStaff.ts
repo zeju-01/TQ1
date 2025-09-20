@@ -56,19 +56,43 @@ export const businessStaffService = {
 
   // 获取业务人员选项（用于下拉框）
   async getOptions(): Promise<Array<{ label: string; value: number }>> {
-    const response = await api.get('/business-staff/options');
-    return response.data;
+    try {
+      const response = await api.get('/business-staff/options');
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   },
 
   // 获取职务列表
   async getPositions(): Promise<string[]> {
-    const response = await api.get('/business-staff/positions');
-    return response.data;
+    try {
+      const response = await api.get('/business-staff/positions');
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   },
 
   // 根据职务获取业务人员
   async getByPosition(position: string): Promise<BusinessStaff[]> {
-    const response = await api.get(`/business-staff/position/${position}`);
-    return response.data;
+    try {
+      const response = await api.get(`/business-staff/position/${position}`);
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   }
 };

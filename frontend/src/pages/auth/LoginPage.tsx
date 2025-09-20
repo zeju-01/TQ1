@@ -24,7 +24,12 @@ const LoginPage: React.FC = () => {
       }
     },
     onError: (error: any) => {
-      message.error(error.response?.data?.message || '登录失败');
+      // 检查是否是频率限制错误
+      if (error.response?.status === 429) {
+        message.error('请求过于频繁，请稍后再试');
+      } else {
+        message.error(error.response?.data?.message || '登录失败');
+      }
     },
   });
 

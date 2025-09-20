@@ -9,9 +9,13 @@ const handleValidationErrors = (req, res, next) => {
       body: req.body,
       errors: errors.array()
     });
+    
+    // 构造更具体的错误消息
+    const errorMessages = errors.array().map(error => error.msg).join('; ');
+    
     return res.status(400).json({
       success: false,
-      message: '输入数据验证失败',
+      message: '输入数据验证失败: ' + errorMessages,
       errors: errors.array(),
       timestamp: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
     });
@@ -149,16 +153,15 @@ const validateIMEI = (imei) => {
 // 入库验证规则
 const validateStockIn = [
   body('imei')
-    .notEmpty()
-    .withMessage('IMEI号不能为空')
+    .optional()
     .custom((value) => {
-      if (!validateIMEI(value)) {
+      if (value && !validateIMEI(value)) {
         throw new Error('IMEI号格式不正确，应为15位数字');
       }
       return true;
     }),
   body('product_name')
-    .optional()
+    .optional()  // 临时设为可选以进行测试
     .isLength({ max: 100 })
     .withMessage('产品名称长度不能超过100字符'),
   body('product_model')
@@ -166,9 +169,13 @@ const validateStockIn = [
     .isLength({ max: 50 })
     .withMessage('产品型号长度不能超过50字符'),
   body('stock_in_quantity')
-    .optional()
+    .optional()  // 临时设为可选以进行测试
     .isInt({ min: 1 })
     .withMessage('入库数量必须为正整数'),
+  body('stock_in_date')
+    .optional()  // 临时设为可选以进行测试
+    .notEmpty()
+    .withMessage('入库时间不能为空'),
   body('supplier')
     .optional()
     .isLength({ max: 100 })

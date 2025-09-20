@@ -2,7 +2,7 @@ const axios = require('axios');
 
 async function testCreateSupplier() {
   try {
-    const response = await axios.post('http://localhost:3001/api/suppliers', {
+    const response = await axios.post('http://localhost:3000/api/suppliers', {
       company_name: '测试供应商',
       contact_person: '联系人',
       phone: '12345678901'

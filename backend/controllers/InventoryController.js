@@ -8,9 +8,25 @@ class InventoryController {
   // 入库操作
   static async stockIn(req, res) {
     try {
+      console.log('后端接收到的入库请求数据:', req.body);
+      console.log('请求头信息:', req.headers);
+      console.log('用户信息:', req.user);
+      
+      // 检查是否有验证错误
+      const { validationResult } = require('express-validator');
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        console.log('验证错误:', errors.array());
+        return res.status(400).json({
+          success: false,
+          message: '验证失败: ' + errors.array().map(e => e.msg).join(', '),
+          errors: errors.array()
+        });
+      }
+      
       const stockInData = {
         ...req.body,
-        stock_in_by: req.user.username
+        stock_in_by: req.user ? req.user.username : 'unknown'
       };
 
       // 如果提供了产品ID，获取产品信息

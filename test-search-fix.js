@@ -5,7 +5,7 @@ async function testSearchFix() {
     console.log('开始测试修复后的搜索功能...');
     
     // 先登录获取令牌
-    const loginResponse = await axios.post('http://localhost:3001/api/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
       username: 'superadmin',
       password: 'admin123'
     });
@@ -20,7 +20,7 @@ async function testSearchFix() {
     
     // 测试供应商搜索功能
     console.log('\n=== 测试供应商搜索功能 ===');
-    const supplierSearchResponse = await axios.get('http://localhost:3001/api/suppliers?page=1&limit=10&search=移远', {
+    const supplierSearchResponse = await axios.get('http://localhost:3000/api/suppliers?page=1&limit=10&search=移远', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -31,7 +31,7 @@ async function testSearchFix() {
     
     // 测试业务人员搜索功能
     console.log('\n=== 测试业务人员搜索功能 ===');
-    const staffSearchResponse = await axios.get('http://localhost:3001/api/business-staff?page=1&limit=10&search=陈', {
+    const staffSearchResponse = await axios.get('http://localhost:3000/api/business-staff?page=1&limit=10&search=陈', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }

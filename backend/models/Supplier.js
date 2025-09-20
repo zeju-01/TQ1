@@ -186,7 +186,8 @@ class SupplierModel {
   // 获取供应商选项列表（用于下拉框）
   static async getOptions() {
     try {
-      const query = 'SELECT id, company_name FROM suppliers ORDER BY company_name';
+      // 修改查询语句，按公司名称去重
+      const query = 'SELECT id, company_name FROM suppliers GROUP BY company_name ORDER BY company_name';
       const result = await executeQuery(query);
       
       if (result.success) {

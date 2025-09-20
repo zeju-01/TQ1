@@ -67,6 +67,12 @@ api.interceptors.response.use(
             message.error(data.message || '请求参数错误');
           }
           break;
+        case 429:
+          // 频率限制错误
+          if (!isDeleteOperation) {
+            message.error(data.message || '请求过于频繁，请稍后再试');
+          }
+          break;
         case 500:
           // 对于删除操作，让业务逻辑处理具体的500错误
           if (!isDeleteOperation) {

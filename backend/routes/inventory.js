@@ -55,7 +55,15 @@ router.post('/stock-in/batch',
   requireOperator,
   [
     body('stockInList').isArray({ min: 1 }).withMessage('入库列表不能为空'),
-    body('stockInList.*.imei').notEmpty().withMessage('IMEI号不能为空')
+    body('stockInList.*.product_name').optional().notEmpty().withMessage('产品名称不能为空'),
+    body('stockInList.*.stock_in_date').optional().notEmpty().withMessage('入库时间不能为空'),
+    body('stockInList.*.stock_in_quantity').optional().isInt({ min: 1 }).withMessage('入库数量必须为正整数'),
+    body('stockInList.*.imei').optional().custom((value) => {
+      if (value && !validateIMEI(value)) {
+        throw new Error('IMEI号格式不正确，应为15位数字');
+      }
+      return true;
+    })
   ],
   handleValidationErrors,
   InventoryController.batchStockIn

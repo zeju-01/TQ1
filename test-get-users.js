@@ -5,7 +5,7 @@ async function testGetUsers() {
     console.log('开始测试获取用户列表...');
     
     // 先登录获取令牌
-    const loginResponse = await axios.post('http://localhost:3001/api/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
       username: 'admin',
       password: 'admin123'
     });
@@ -19,7 +19,7 @@ async function testGetUsers() {
     console.log('登录成功，获取到访问令牌');
     
     // 使用令牌获取用户列表
-    const usersResponse = await axios.get('http://localhost:3001/api/users?page=2&limit=10', {
+    const usersResponse = await axios.get('http://localhost:3000/api/users?page=2&limit=10', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }

@@ -5,7 +5,7 @@ async function testSearchFunctionality() {
     console.log('开始测试搜索功能...');
     
     // 先登录获取令牌
-    const loginResponse = await axios.post('http://localhost:3001/api/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
       username: 'superadmin',
       password: 'admin123'
     });
@@ -20,7 +20,7 @@ async function testSearchFunctionality() {
     
     // 测试供应商搜索
     console.log('\n=== 测试供应商搜索 ===');
-    const supplierResponse = await axios.get('http://localhost:3001/api/suppliers?page=1&limit=10&search=移远', {
+    const supplierResponse = await axios.get('http://localhost:3000/api/suppliers?page=1&limit=10&search=移远', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -30,7 +30,7 @@ async function testSearchFunctionality() {
     
     // 测试运营商搜索
     console.log('\n=== 测试运营商搜索 ===');
-    const operatorResponse = await axios.get('http://localhost:3001/api/operators?page=1&limit=10&search=移动', {
+    const operatorResponse = await axios.get('http://localhost:3000/api/operators?page=1&limit=10&search=移动', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -40,7 +40,7 @@ async function testSearchFunctionality() {
     
     // 测试快递公司搜索
     console.log('\n=== 测试快递公司搜索 ===');
-    const courierResponse = await axios.get('http://localhost:3001/api/couriers?page=1&limit=10&search=顺丰', {
+    const courierResponse = await axios.get('http://localhost:3000/api/couriers?page=1&limit=10&search=顺丰', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -50,7 +50,7 @@ async function testSearchFunctionality() {
     
     // 测试业务人员搜索
     console.log('\n=== 测试业务人员搜索 ===');
-    const staffResponse = await axios.get('http://localhost:3001/api/business-staff?page=1&limit=10&search=陈', {
+    const staffResponse = await axios.get('http://localhost:3000/api/business-staff?page=1&limit=10&search=陈', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }

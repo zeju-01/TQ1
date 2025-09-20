@@ -9,7 +9,7 @@ class InventoryModel {
         product_id, product_name, product_model, product_description, operator,
         imei, batch_number, stock_in_quantity = 1, supplier, factory_name,
         factory_order, stock_in_date, stock_in_contract_number, stock_in_document,
-        stock_in_by, stock_in_notes
+        stock_in_by, stock_in_notes, stock_in_number  // 添加入库单号字段
       } = stockInData;
 
       // 检查IMEI是否已存在
@@ -27,8 +27,9 @@ class InventoryModel {
           imei, batch_number, stock_in_quantity, stock_in_status, return_status,
           after_sales_status, other_status, stock_in_auto_number, supplier,
           factory_name, factory_order, stock_in_date, stock_in_contract_number,
-          stock_in_document, stock_in_by, stock_in_notes, quantity, transaction_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          stock_in_document, stock_in_by, stock_in_notes, quantity, transaction_type,
+          stock_in_number  // 添加入库单号字段
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const params = [
@@ -36,7 +37,8 @@ class InventoryModel {
         imei, batch_number, stock_in_quantity, '已入库', '正常',
         '正常', '正常', stock_in_auto_number, supplier,
         factory_name, factory_order, stock_in_date || new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }), stock_in_contract_number,
-        stock_in_document, stock_in_by, stock_in_notes, stock_in_quantity, 'in'
+        stock_in_document, stock_in_by, stock_in_notes, stock_in_quantity, 'in',
+        stock_in_number || null  // 添加入库单号参数
       ];
 
       const result = await executeQuery(query, params);

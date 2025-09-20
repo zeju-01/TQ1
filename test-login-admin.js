@@ -4,8 +4,8 @@ async function testLogin() {
   try {
     console.log('开始测试admin用户登录功能...');
     
-    const response = await axios.post('http://localhost:3001/api/auth/login', {
-      username: 'superadmin',
+    const response = await axios.post('http://localhost:5000/api/auth/login', {
+      username: 'admin',
       password: 'admin123'
     });
     

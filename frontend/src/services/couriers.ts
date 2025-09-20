@@ -32,8 +32,16 @@ export const courierService = {
 
   // 获取快递公司选项
   async getOptions(): Promise<ApiResponse<Courier[]>> {
-    const response = await api.get('/couriers/options');
-    return response.data;
+    try {
+      const response = await api.get('/couriers/options');
+      return response.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   },
 
   // 获取快递公司详情
@@ -62,7 +70,15 @@ export const courierService = {
 
   // 根据快递公司获取产品（兼容旧接口）
   async getProductsByCourier(courier: string): Promise<any[]> {
-    const response = await api.get(`/products/courier/${courier}`);
-    return response.data.data;
+    try {
+      const response = await api.get(`/products/courier/${courier}`);
+      return response.data.data;
+    } catch (error: any) {
+      // 如果是频率限制错误，显示更友好的提示
+      if (error.response && error.response.status === 429) {
+        throw new Error('请求过于频繁，请稍后再试');
+      }
+      throw error;
+    }
   }
 };

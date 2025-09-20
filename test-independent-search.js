@@ -5,7 +5,7 @@ async function testIndependentSearch() {
     console.log('开始测试独立搜索功能...');
     
     // 先登录获取令牌
-    const loginResponse = await axios.post('http://localhost:3001/api/auth/login', {
+    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
       username: 'superadmin',
       password: 'admin123'
     });
@@ -20,7 +20,7 @@ async function testIndependentSearch() {
     
     // 测试供应商独立搜索功能
     console.log('\n=== 测试供应商独立搜索功能 ===');
-    const supplierSearchResponse = await axios.get('http://localhost:3001/api/suppliers?page=1&limit=10&search=移远', {
+    const supplierSearchResponse = await axios.get('http://localhost:3000/api/suppliers?page=1&limit=10&search=移远', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -31,7 +31,7 @@ async function testIndependentSearch() {
     
     // 测试运营商独立搜索功能
     console.log('\n=== 测试运营商独立搜索功能 ===');
-    const operatorSearchResponse = await axios.get('http://localhost:3001/api/operators?page=1&limit=10&search=联通', {
+    const operatorSearchResponse = await axios.get('http://localhost:3000/api/operators?page=1&limit=10&search=联通', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
@@ -42,7 +42,7 @@ async function testIndependentSearch() {
     
     // 测试快递公司独立搜索功能
     console.log('\n=== 测试快递公司独立搜索功能 ===');
-    const courierSearchResponse = await axios.get('http://localhost:3001/api/couriers?page=1&limit=10&search=顺丰', {
+    const courierSearchResponse = await axios.get('http://localhost:3000/api/couriers?page=1&limit=10&search=顺丰', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }

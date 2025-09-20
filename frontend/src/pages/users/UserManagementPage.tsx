@@ -1,5 +1,5 @@
 // 用户管理页面
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table,
   Button,
@@ -55,9 +55,27 @@ const UserManagementPage: React.FC = () => {
     total: 0
   });
   const [searchText, setSearchText] = useState('');
+  
+  // 防抖计时器引用
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 加载用户数据
-  const loadUsers = async (page = 1, limit = 10, search = '') => {
+  // 防抖函数
+  const debounce = (func: Function, wait: number) => {
+    return function executedFunction(...args: any[]) {
+      // 清除之前的定时器
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      
+      // 设置新的定时器
+      debounceTimer.current = setTimeout(() => {
+        func(...args);
+      }, wait);
+    };
+  };
+
+  // 带防抖的加载用户数据函数
+  const loadUsersDebounced = useRef(debounce(async (page = 1, limit = 10, search = '') => {
     try {
       setLoading(true);
       const response = await usersApi.getList({ page, limit, search });
@@ -76,19 +94,84 @@ const UserManagementPage: React.FC = () => {
           total: response.pagination.total
         });
       } else {
-        message.error(response.message || '获取用户列表失败');
+        // 检查是否是频率限制错误
+        if (response.message && response.message.includes('请求过于频繁')) {
+          message.error('请求过于频繁，请稍后再试');
+        } else {
+          message.error(response.message || '获取用户列表失败');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('加载用户数据失败:', error);
-      message.error('加载用户数据失败');
+      // 检查是否是频率限制错误
+      if (error.message && error.message.includes('请求过于频繁')) {
+        message.error('请求过于频繁，请稍后再试');
+      } else {
+        message.error('加载用户数据失败: ' + error.message);
+      }
     } finally {
       setLoading(false);
     }
+  }, 100)).current; // 将防抖时间减少到100ms以提高响应速度
+
+  // 加载用户数据
+  const loadUsers = async (page = 1, limit = 10, search = '', immediate = false) => {
+    // 如果是立即加载（如页面初始化），则直接调用，不使用防抖
+    if (immediate) {
+      try {
+        setLoading(true);
+        const response = await usersApi.getList({ page, limit, search });
+        
+        if (response.success) {
+          // 为用户数据添加状态（使用真实的last_login数据）
+          const usersWithStatus = response.data.map(user => ({
+            ...user,
+            status: 'active' as const
+          }));
+          
+          setUserData(usersWithStatus);
+          setPagination({
+            current: response.pagination.page,
+            pageSize: response.pagination.limit,
+            total: response.pagination.total
+          });
+        } else {
+          // 检查是否是频率限制错误
+          if (response.message && response.message.includes('请求过于频繁')) {
+            message.error('请求过于频繁，请稍后再试');
+          } else {
+            message.error(response.message || '获取用户列表失败');
+          }
+        }
+      } catch (error: any) {
+        console.error('加载用户数据失败:', error);
+        // 检查是否是频率限制错误
+        if (error.message && error.message.includes('请求过于频繁')) {
+          message.error('请求过于频繁，请稍后再试');
+        } else {
+          message.error('加载用户数据失败: ' + error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // 否则使用防抖加载
+      loadUsersDebounced(page, limit, search);
+    }
   };
 
-  // 组件挂载时加载数据
+  // 组件挂载时加载数据（立即加载）
   useEffect(() => {
-    loadUsers();
+    loadUsers(1, 10, '', true); // 添加true参数表示立即加载
+  }, []);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
   }, []);
 
   const getRoleColor = (role: string) => {

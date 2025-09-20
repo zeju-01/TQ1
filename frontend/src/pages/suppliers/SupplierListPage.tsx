@@ -60,6 +60,17 @@ const SupplierListPage: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState('suppliers');
   const [modalType, setModalType] = useState<'supplier' | 'operator' | 'courier'>('supplier');
+  const [searchKeyword, setSearchKeyword] = useState(''); // 添加搜索关键词状态
+
+  useEffect(() => {
+    if (activeTab === 'suppliers') {
+      loadSuppliers();
+    } else if (activeTab === 'operators') {
+      loadOperators();
+    } else if (activeTab === 'couriers') {
+      loadCouriers();
+    }
+  }, [activeTab, pagination.current, pagination.pageSize, operatorPagination.current, operatorPagination.pageSize, courierPagination.current, courierPagination.pageSize, searchKeyword]);
 
   // 加载数据函数
   const loadSuppliers = async () => {
@@ -67,7 +78,8 @@ const SupplierListPage: React.FC = () => {
       setLoading(true);
       const response = await supplierService.getList({
         page: pagination.current,
-        limit: pagination.pageSize
+        limit: pagination.pageSize,
+        search: searchKeyword // 使用存储的搜索关键词
       });
       setSupplierData(response.data);
       setTotal(response.pagination.total);
@@ -84,10 +96,10 @@ const SupplierListPage: React.FC = () => {
       setLoading(true);
       const response = await operatorService.getList({
         page: operatorPagination.current,
-        limit: operatorPagination.pageSize
+        limit: operatorPagination.pageSize,
+        search: searchKeyword // 使用存储的搜索关键词
       });
       setOperatorData(response.data);
-      // 使用数组长度作为总数，后续可以根据实际API响应调整
       setOperatorTotal(response.pagination.total);
     } catch (error) {
       console.error('加载运营商数据失败:', error);
@@ -102,10 +114,10 @@ const SupplierListPage: React.FC = () => {
       setLoading(true);
       const response = await courierService.getList({
         page: courierPagination.current,
-        limit: courierPagination.pageSize
+        limit: courierPagination.pageSize,
+        search: searchKeyword // 使用存储的搜索关键词
       });
       setCourierData(response.data);
-      // 使用数组长度作为总数，后续可以根据实际API响应调整
       setCourierTotal(response.pagination.total);
     } catch (error) {
       console.error('加载快递公司数据失败:', error);
@@ -114,16 +126,6 @@ const SupplierListPage: React.FC = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (activeTab === 'suppliers') {
-      loadSuppliers();
-    } else if (activeTab === 'operators') {
-      loadOperators();
-    } else if (activeTab === 'couriers') {
-      loadCouriers();
-    }
-  }, [activeTab, pagination.current, pagination.pageSize, operatorPagination.current, operatorPagination.pageSize, courierPagination.current, courierPagination.pageSize]);
 
   // 操作处理函数
   const handleAddSupplier = () => {
@@ -256,6 +258,142 @@ const SupplierListPage: React.FC = () => {
 
   const handleSearch = (value: string) => {
     console.log('搜索:', value);
+    setSearchKeyword(value); // 存储搜索关键词
+    // 根据当前活动的标签页执行相应的搜索操作
+    if (activeTab === 'suppliers') {
+      searchSuppliers(value);
+    } else if (activeTab === 'operators') {
+      searchOperators(value);
+    } else if (activeTab === 'couriers') {
+      searchCouriers(value);
+    }
+  };
+
+  // 搜索供应商
+  const searchSuppliers = async (searchValue: string) => {
+    try {
+      setLoading(true);
+      const response = await supplierService.getList({
+        page: 1,
+        limit: pagination.pageSize,
+        search: searchValue
+      });
+      setSupplierData(response.data);
+      setTotal(response.pagination.total);
+      // 重置分页到第一页
+      setPagination(prev => ({ ...prev, current: 1 }));
+    } catch (error) {
+      console.error('搜索供应商失败:', error);
+      message.error('搜索供应商失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 搜索运营商
+  const searchOperators = async (searchValue: string) => {
+    try {
+      setLoading(true);
+      const response = await operatorService.getList({
+        page: 1,
+        limit: operatorPagination.pageSize,
+        search: searchValue
+      });
+      setOperatorData(response.data);
+      setOperatorTotal(response.pagination.total);
+      // 重置分页到第一页
+      setOperatorPagination(prev => ({ ...prev, current: 1 }));
+    } catch (error) {
+      console.error('搜索运营商失败:', error);
+      message.error('搜索运营商失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 搜索快递公司
+  const searchCouriers = async (searchValue: string) => {
+    try {
+      setLoading(true);
+      const response = await courierService.getList({
+        page: 1,
+        limit: courierPagination.pageSize,
+        search: searchValue
+      });
+      setCourierData(response.data);
+      setCourierTotal(response.pagination.total);
+      // 重置分页到第一页
+      setCourierPagination(prev => ({ ...prev, current: 1 }));
+    } catch (error) {
+      console.error('搜索快递公司失败:', error);
+      message.error('搜索快递公司失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 更新分页处理函数以支持搜索
+  const handleSupplierPageChange = async (page: number, pageSize?: number) => {
+    const newPagination = { current: page, pageSize: pageSize || 10 };
+    setPagination(newPagination);
+    
+    try {
+      setLoading(true);
+      const response = await supplierService.getList({
+        page: page,
+        limit: pageSize || 10,
+        search: searchKeyword // 使用存储的搜索关键词
+      });
+      setSupplierData(response.data);
+      setTotal(response.pagination.total);
+    } catch (error) {
+      console.error('加载供应商数据失败:', error);
+      message.error('加载供应商数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOperatorPageChange = async (page: number, pageSize?: number) => {
+    const newPagination = { current: page, pageSize: pageSize || 10 };
+    setOperatorPagination(newPagination);
+    
+    try {
+      setLoading(true);
+      const response = await operatorService.getList({
+        page: page,
+        limit: pageSize || 10,
+        search: searchKeyword // 使用存储的搜索关键词
+      });
+      setOperatorData(response.data);
+      setOperatorTotal(response.pagination.total);
+    } catch (error) {
+      console.error('加载运营商数据失败:', error);
+      message.error('加载运营商数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCourierPageChange = async (page: number, pageSize?: number) => {
+    const newPagination = { current: page, pageSize: pageSize || 10 };
+    setCourierPagination(newPagination);
+    
+    try {
+      setLoading(true);
+      const response = await courierService.getList({
+        page: page,
+        limit: pageSize || 10,
+        search: searchKeyword // 使用存储的搜索关键词
+      });
+      setCourierData(response.data);
+      setCourierTotal(response.pagination.total);
+    } catch (error) {
+      console.error('加载快递公司数据失败:', error);
+      message.error('加载快递公司数据失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 表格列配置
@@ -678,9 +816,7 @@ const SupplierListPage: React.FC = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
-                onChange: (page, pageSize) => {
-                  setPagination({ current: page, pageSize: pageSize || 10 });
-                }
+                onChange: handleSupplierPageChange
               }}
             />
           </Card>
@@ -717,9 +853,7 @@ const SupplierListPage: React.FC = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
-                onChange: (page, pageSize) => {
-                  setOperatorPagination({ current: page, pageSize: pageSize || 10 });
-                }
+                onChange: handleOperatorPageChange
               }}
             />
           </Card>
@@ -756,9 +890,7 @@ const SupplierListPage: React.FC = () => {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
-                onChange: (page, pageSize) => {
-                  setCourierPagination({ current: page, pageSize: pageSize || 10 });
-                }
+                onChange: handleCourierPageChange
               }}
             />
           </Card>

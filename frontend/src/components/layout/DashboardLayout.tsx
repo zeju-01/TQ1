@@ -27,6 +27,7 @@ import SupplierListPage from '@/pages/suppliers/SupplierListPage';
 import BusinessStaffListPage from '@/pages/business-staff/BusinessStaffListPage';
 import UserManagementPage from '@/pages/users/UserManagementPage';
 import ReportsPage from '@/pages/reports/ReportsPage';
+// 移除了对StockUpdatePage的导入
 
 const { Header, Sider, Content } = Layout;
 
@@ -80,6 +81,7 @@ const DashboardLayout: React.FC = () => {
         { key: '/inventory/stock-in', label: '入库管理' },
         { key: '/inventory/stock-out', label: '出库管理' },
         { key: '/inventory/return', label: '退库管理' },
+        // 移除了对'入库更新'的菜单项
       ],
     },
     {
@@ -160,6 +162,7 @@ const DashboardLayout: React.FC = () => {
             <Route path="/inventory/stock-in" element={<StockInPage />} />
             <Route path="/inventory/stock-out" element={<StockOutPage />} />
             <Route path="/inventory/return" element={<ReturnPage />} />
+            {/* 移除了对StockUpdatePage的路由 */}
             <Route path="/products/list" element={<ProductListPage />} />
             <Route path="/suppliers/list" element={<SupplierListPage />} />
             <Route path="/business-staff/list" element={<BusinessStaffListPage />} />

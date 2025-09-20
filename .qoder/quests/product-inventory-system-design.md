@@ -6,9 +6,15 @@
 后端
 cd 'f:\Workstation\BaiduNetdiskWorkspace\else\qoder\TQ1\backend'; 
 node server.js
+node D:\python_work\QOD\TQ1\backend\server.js
+
+cd backend
+node server.js
 前端
 cd 'f:\Workstation\BaiduNetdiskWorkspace\else\qoder\TQ1\frontend'; npm run dev
 
+cd frontend
+node node_modules/vite/bin/vite.js
 ## 1. 概述
 
 产品出入库系统是一个基于Web的库存管理解决方案，旨在帮助企业高效管理产品库存、追踪出入库记录、监控库存水平并生成相关报表。系统采用现代化的全栈架构，提供直观易用的用户界面和强大的后台管理功能。
