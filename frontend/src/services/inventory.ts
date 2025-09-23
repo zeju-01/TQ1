@@ -124,7 +124,7 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
         throw new Error('入库数量必须为正整数');
       }
       
-      // 验证IMEI格式（如果提供了IMEI号）
+      // 验证IMEI格式
       if (item.imei && !/^\d{15}$/.test(item.imei)) {
         throw new Error(`IMEI号 ${item.imei} 格式不正确，应为15位数字`);
       }

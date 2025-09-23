@@ -13,7 +13,7 @@ class InventoryModel {
       } = stockInData;
 
       // 检查IMEI是否已存在（仅当IMEI不为空时）
-      if (imei) {
+      if (imei && imei.trim() !== '') {
         const existingItem = await this.findByIMEI(imei);
         if (existingItem) {
           throw new Error('IMEI号已存在');
@@ -59,7 +59,8 @@ class InventoryModel {
 
       const params = [
         product_id, product_name, product_model, product_description, operator,
-        imei, batch_number, stock_in_quantity, '已入库', '正常',
+        imei || null,  // 如果IMEI为空，插入NULL而不是空字符串
+        batch_number, stock_in_quantity, '已入库', '正常',
         '正常', '正常', supplier,
         factory_name, factory_order, formatted_stock_in_date, stock_in_contract_number,
         stock_in_document, stock_in_by, stock_in_notes, stock_in_quantity, 'in',

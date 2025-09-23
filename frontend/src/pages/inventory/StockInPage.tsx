@@ -38,7 +38,7 @@ import * as XLSX from 'xlsx';
 import { productService } from '../../services/products';
 import { operatorService } from '../../services/operators';
 import { supplierService } from '../../services/suppliers';
-import { stockIn, batchStockIn, getMaxStockInNumber } from '../../services/inventory';
+import { stockIn, batchStockIn, getMaxStockInNumber, checkIMEI } from '../../services/inventory';
 import type { Product } from '../../types';
 import type { Operator } from '../../services/operators';
 import type { Supplier } from '../../types';
@@ -939,6 +939,30 @@ const StockInPage: React.FC = () => {
       if (values.imei && !/^\d{15}$/.test(values.imei)) {
         message.error('IMEI号格式不正确，应为15位数字');
         return;
+      }
+      
+      // 检查IMEI号是否已存在于当前表格中
+      if (values.imei) {
+        const isDuplicateInTable = batchItems.some(item => item.imei === values.imei);
+        if (isDuplicateInTable) {
+          message.error(`IMEI号 ${values.imei} 已存在于当前表格中`);
+          return;
+        }
+      }
+      
+      // 检查IMEI号是否已存在于数据库中
+      if (values.imei) {
+        try {
+          const imeiCheck = await checkIMEI(values.imei);
+          if (!imeiCheck.available) {
+            message.error(`IMEI号 ${values.imei} 已存在于数据库中`);
+            return;
+          }
+        } catch (error) {
+          console.error('检查IMEI失败:', error);
+          message.error('检查IMEI失败: ' + (error as Error).message);
+          return;
+        }
       }
       
       const selectedProduct = products.find(p => p.id === values.product_name);
