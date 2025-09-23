@@ -1,53 +1,51 @@
-// 检查库存表结构
-const { open } = require('sqlite');
+// 检查数据库表结构的脚本
+const { executeQuery } = require('./backend/config/database');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 async function checkTableSchema() {
   try {
-    console.log('检查库存表结构...\n');
+    // 直接连接数据库检查表结构
+    const dbPath = path.join(__dirname, 'backend', 'data', 'inventory.db');
+    console.log("数据库路径:", dbPath);
     
-    // 连接数据库
-    const dbPath = process.env.DB_PATH || path.join(__dirname, 'backend', 'data', 'inventory.db');
-    console.log('数据库路径:', dbPath);
+    const db = new sqlite3.Database(dbPath);
     
-    const db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-    
-    // 获取表结构信息
-    const tableInfo = await db.all("PRAGMA table_info(inventory)");
-    console.log('库存表字段信息:');
-    tableInfo.forEach(field => {
-      console.log(`  ${field.name} (${field.type}) ${field.notnull ? 'NOT NULL' : 'NULL'} ${field.dflt_value ? `默认值: ${field.dflt_value}` : ''} ${field.pk ? '主键' : ''}`);
-    });
-    
-    // 特别检查 stock_in_auto_number 字段
-    console.log('\n特别检查 stock_in_auto_number 字段:');
-    const autoNumberField = tableInfo.find(field => field.name === 'stock_in_auto_number');
-    if (autoNumberField) {
-      console.log(`  字段名: ${autoNumberField.name}`);
-      console.log(`  数据类型: ${autoNumberField.type}`);
-      console.log(`  是否非空: ${autoNumberField.notnull ? '是' : '否'}`);
-      console.log(`  默认值: ${autoNumberField.dflt_value || '无'}`);
-      console.log(`  是否主键: ${autoNumberField.pk ? '是' : '否'}`);
-      
-      if (autoNumberField.notnull && !autoNumberField.dflt_value) {
-        console.log('  ⚠️  该字段有 NOT NULL 约束但无默认值');
-        console.log('  这意味着插入记录时必须提供该字段的值');
+    // 查询inventory表的结构
+    db.all("PRAGMA table_info(inventory)", (err, rows) => {
+      if (err) {
+        console.error("查询表结构失败:", err);
+        db.close();
+        return;
       }
-    } else {
-      console.log('  ❌ 未找到 stock_in_auto_number 字段');
-    }
-    
-    await db.close();
-    console.log('\n✅ 表结构检查完成！');
-    
+      
+      console.log("Inventory表结构:");
+      console.log("字段名\t\t\t类型\t\t是否为空\t默认值\t\t是否为主键");
+      console.log("---------------------------------------------------------------------");
+      
+      for (const column of rows) {
+        console.log(
+          `${column.name}\t\t\t${column.type}\t\t${column.notnull ? 'NO' : 'YES'}\t\t${column.dflt_value || 'NULL'}\t\t${column.pk ? 'YES' : 'NO'}`
+        );
+      }
+      
+      // 特别检查product_name字段
+      const productNameColumn = rows.find(col => col.name === 'product_name');
+      if (productNameColumn) {
+        console.log("\n找到product_name字段:");
+        console.log(`- 字段名: ${productNameColumn.name}`);
+        console.log(`- 数据类型: ${productNameColumn.type}`);
+        console.log(`- 是否允许为空: ${productNameColumn.notnull ? '否' : '是'}`);
+        console.log(`- 默认值: ${productNameColumn.dflt_value || '无'}`);
+      } else {
+        console.log("\n错误: 未找到product_name字段!");
+      }
+      
+      db.close();
+    });
   } catch (error) {
-    console.error('检查表结构时出错:', error);
+    console.error("检查表结构时出错:", error);
   }
 }
 
-// 运行检查
 checkTableSchema();

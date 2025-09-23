@@ -137,9 +137,17 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
       console.log('处理项目，stockInDocument:', stockInDocument);
       console.log('项目 receipt_documents:', item.receipt_documents);
       
+      // 正确处理产品名称，确保无论是字符串还是数字都正确传递
+      let productName: string | undefined;
+      if (typeof item.product_name === 'string') {
+        productName = item.product_name;
+      } else if (typeof item.product_name === 'number') {
+        // 如果是数字，可能是产品ID，我们需要将其转换为字符串
+        productName = item.product_name.toString();
+      }
+      
       const result = {
-        product_id: typeof item.product_name === 'number' ? item.product_name : undefined,
-        product_name: typeof item.product_name === 'string' ? item.product_name : undefined,
+        product_name: productName,
         product_model: item.product_model || '',
         operator: item.operator || '',
         imei: item.imei || '',

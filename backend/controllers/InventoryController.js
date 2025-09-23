@@ -36,14 +36,26 @@ class InventoryController {
       console.log('过滤后的数据:', stockInData);
       console.log('stock_in_document 字段值:', stockInData.stock_in_document);
 
-      // 如果提供了产品ID，获取产品信息
+      // 如果提供了产品ID，获取产品信息（但保留已有的product_name）
       if (stockInData.product_id) {
         const product = await ProductModel.findById(stockInData.product_id);
         if (product) {
-          stockInData.product_name = product.name;
-          stockInData.product_model = product.model;
-          stockInData.product_description = product.description;
-          stockInData.operator = product.operator;
+          // 只有当product_name为空时才使用产品表中的名称
+          if (!stockInData.product_name) {
+            stockInData.product_name = product.name;
+          }
+          // 只有当product_model为空时才使用产品表中的型号
+          if (!stockInData.product_model) {
+            stockInData.product_model = product.model;
+          }
+          // 只有当product_description为空时才使用产品表中的描述
+          if (!stockInData.product_description) {
+            stockInData.product_description = product.description;
+          }
+          // 只有当operator为空时才使用产品表中的运营商
+          if (!stockInData.operator) {
+            stockInData.operator = product.operator;
+          }
         }
       }
 

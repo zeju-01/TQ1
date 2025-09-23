@@ -545,7 +545,6 @@ const StockInPage: React.FC = () => {
           // 转换数据格式以匹配批量入库列表
           const convertedData = importedData.map((item: any, index: number) => {
             // 获取表单中的非空值（除IMEI和箱号外）
-            const formValues = batchForm.getFieldsValue();
             const formData: any = {};
             
             // 只有当表单字段不为空时才使用表单值（排除IMEI和箱号）
@@ -557,6 +556,37 @@ const StockInPage: React.FC = () => {
             if (formValues.stock_in_number) formData.stock_in_number = formValues.stock_in_number;
             // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
             if (formValues.stock_in_date) formData.stock_in_date = formValues.stock_in_date.format('YYYY-MM-DD HH:mm:ss');
+            
+            // 处理产品名称 - 如果表单中的product_name是数字ID，需要转换为产品名称
+            let productName = '';
+            if (item.product_name || item.productName || item['产品名称']) {
+              // 优先使用Excel中的产品名称
+              productName = item.product_name || item.productName || item['产品名称'];
+            } else if (formValues.product_name) {
+              // 如果Excel中没有产品名称，使用表单中的产品名称
+              if (typeof formValues.product_name === 'number') {
+                // 如果是数字ID，从产品列表中查找产品名称
+                const selectedProduct = products.find(p => p.id === formValues.product_name);
+                productName = selectedProduct ? (selectedProduct.name || '') : '';
+              } else {
+                // 如果是字符串，直接使用
+                productName = formValues.product_name as string;
+              }
+            }
+            
+            // 处理产品型号 - 如果表单中的product_name是数字ID，需要获取对应的产品型号
+            let productModel = '';
+            if (item.product_model || item.productModel || item['产品型号']) {
+              // 优先使用Excel中的产品型号
+              productModel = item.product_model || item.productModel || item['产品型号'];
+            } else if (formValues.product_model) {
+              // 如果Excel中没有产品型号，使用表单中的产品型号
+              productModel = formValues.product_model as string;
+            } else if (typeof formValues.product_name === 'number') {
+              // 如果表单中的product_name是数字ID，从产品列表中查找产品型号
+              const selectedProduct = products.find(p => p.id === formValues.product_name);
+              productModel = selectedProduct ? (selectedProduct.model || '') : '';
+            }
             
             // 处理收货单据文件
             let stockInDocument = '';
@@ -584,8 +614,8 @@ const StockInPage: React.FC = () => {
             return {
               id: Date.now() + index,
               imei: item.imei || item.IMEI || item['IMEI号'] || '',  // 添加对"IMEI号"字段的支持
-              product_name: item.product_name || item.productName || item['产品名称'] || formValues.product_name || '',
-              product_model: item.product_model || item.productModel || item['产品型号'] || formValues.product_model || '',
+              product_name: productName,
+              product_model: productModel,
               operator: item.operator || item.Operator || item['运营商'] || formData.operator || '',
               box_number: item.box_number || item.boxNumber || item['箱号'] || '',
               factory_order: item.factory_order || item.factoryOrder || item['工厂工单'] || formData.factory_order || '',
