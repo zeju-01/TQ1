@@ -17,7 +17,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5002', // 更新为新的后端端口5002
+        target: 'http://localhost:5003', // 更新为新的后端端口5002
         changeOrigin: true,
       },
     },

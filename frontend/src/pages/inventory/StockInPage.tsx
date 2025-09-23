@@ -997,8 +997,8 @@ const StockInPage: React.FC = () => {
       setBatchItems(prev => [newItem, ...prev]);
       
       batchForm.setFieldsValue({
-        imei: '',
-        box_number: ''
+        imei: ''
+        // 不再清空箱号字段，保留用户输入的箱号
       });
       
       message.success('添加成功！');

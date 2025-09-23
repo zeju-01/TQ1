@@ -166,7 +166,26 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
     
     const response = await api.post('/inventory/stock-in/batch', { stockInList: backendStockInList });
     console.log('后端批量入库响应:', response);
-    return response.data;
+    
+    // 正确处理后端返回的数据结构
+    const responseData = response.data;
+    if (responseData.success) {
+      return {
+        success: true,
+        message: responseData.message || '批量入库完成',
+        data: responseData.data?.results || [],
+        total: responseData.data?.total || stockInList.length,
+        successCount: responseData.data?.success || 0,
+        failedCount: responseData.data?.failed || 0,
+        errors: responseData.data?.errors || []
+      };
+    } else {
+      return {
+        success: false,
+        message: responseData.message || '批量入库失败',
+        errors: responseData.data?.errors || []
+      };
+    }
   } catch (error: any) {
     console.error('批量入库服务错误:', error);
     console.error('错误响应:', error.response);
