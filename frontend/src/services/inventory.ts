@@ -132,24 +132,12 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
     
     // 转换前端数据为后端需要的格式
     const backendStockInList = stockInList.map(item => {
-      // 处理收货单据信息
-      let stockInDocument = '';
-      if (item.receipt_documents && item.receipt_documents.length > 0) {
-        // 检查文件对象的多种可能格式
-        stockInDocument = item.receipt_documents.map((file: any) => {
-          // 如果已经有response.filename，使用它
-          if (file.response && file.response.filename) {
-            return file.response.filename;
-          }
-          // 否则使用文件名
-          return file.name || file.fileName || '收货单据';
-        }).join(', ');
-      } else if (item.stock_in_document) {
-        // 如果已经有stock_in_document字段，直接使用它
-        stockInDocument = item.stock_in_document;
-      }
+      // 直接使用项目中的 stock_in_document 字段，不再重新生成
+      const stockInDocument = item.stock_in_document || '';
+      console.log('处理项目，stockInDocument:', stockInDocument);
+      console.log('项目 receipt_documents:', item.receipt_documents);
       
-      return {
+      const result = {
         product_id: typeof item.product_name === 'number' ? item.product_name : undefined,
         product_name: typeof item.product_name === 'string' ? item.product_name : undefined,
         product_model: item.product_model || '',
@@ -166,14 +154,22 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
         // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
         stock_in_date: item.stock_in_date || new Date().toISOString(),
         stock_in_by: 'current_user', // 这里应该从认证信息中获取当前用户
-        // 添加收货单据信息
+        // 直接使用已有的收货单据信息
         stock_in_document: stockInDocument || undefined
       };
+      
+      console.log('转换后的后端数据:', result);
+      return result;
     });
     
+    console.log('发送到后端的批量入库数据:', backendStockInList);
+    
     const response = await api.post('/inventory/stock-in/batch', { stockInList: backendStockInList });
+    console.log('后端批量入库响应:', response);
     return response.data;
   } catch (error: any) {
+    console.error('批量入库服务错误:', error);
+    console.error('错误响应:', error.response);
     throw new Error(error.response?.data?.message || error.message || '批量入库失败');
   }
 };

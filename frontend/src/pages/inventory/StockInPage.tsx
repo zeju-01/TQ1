@@ -65,6 +65,8 @@ interface StockInItem {
   supplier: string;
   remark: string;
   receipt_documents: any[];
+  stock_in_document?: string;
+  custom_file_names?: string[];
   status: 'pending' | 'success' | 'error';
   error_message?: string;
 }
@@ -556,6 +558,29 @@ const StockInPage: React.FC = () => {
             // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
             if (formValues.stock_in_date) formData.stock_in_date = formValues.stock_in_date.format('YYYY-MM-DD HH:mm:ss');
             
+            // 处理收货单据文件
+            let stockInDocument = '';
+            const customFileNames: string[] = [];
+            let batchReceiptDocuments = formValues.receipt_documents || [];
+            
+            if (batchReceiptDocuments && batchReceiptDocuments.length > 0) {
+              const stockInNumber = formValues.stock_in_number || currentStockInNumber || 'SI';
+              const fileNames: string[] = [];
+              
+              for (let i = 0; i < batchReceiptDocuments.length; i++) {
+                const file = batchReceiptDocuments[i];
+                if (file && (file.originFileObj || file.file)) {
+                  const fileName = file.name || file.fileName || `file-${i}`;
+                  const fileExtension = fileName.split('.').pop();
+                  const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
+                  fileNames.push(newFileName);
+                  customFileNames.push(newFileName);
+                }
+              }
+              
+              stockInDocument = fileNames.join(', ');
+            }
+            
             return {
               id: Date.now() + index,
               imei: item.imei || item.IMEI || item['IMEI号'] || '',  // 添加对"IMEI号"字段的支持
@@ -571,7 +596,9 @@ const StockInPage: React.FC = () => {
               stock_in_date: item.stock_in_date || item.stockInTime || item['入库时间'] || formData.stock_in_date || dayjs().format('YYYY-MM-DD HH:mm:ss'),
               supplier: item.supplier || item.Supplier || item['供应商'] || formData.supplier || '',
               remark: item.remark || item.Remark || item['备注'] || formData.remark || '',
-              receipt_documents: [],
+              receipt_documents: batchReceiptDocuments, // 保存原始文件对象，用于后续上传
+              stock_in_document: stockInDocument || '', // 保存预期的文件名
+              custom_file_names: customFileNames, // 保存自定义文件名数组
               status: 'pending' as 'pending'
             };
           });
@@ -917,104 +944,29 @@ const StockInPage: React.FC = () => {
       const selectedProduct = products.find(p => p.id === values.product_name);
       const productModel = selectedProduct ? (selectedProduct.model || '') : '';
 
+      // 不再在添加项目时上传文件，而是保存原始文件信息和预期的文件名
       let batchReceiptDocuments = values.receipt_documents || [];
-      let stockInDocument = '';
       
-      // 如果有收货单据文件，先上传文件
+      // 生成文件名但不上传文件
+      let stockInDocument = '';
+      const customFileNames: string[] = []; // 存储自定义文件名
+      
       if (batchReceiptDocuments && batchReceiptDocuments.length > 0) {
         const stockInNumber = values.stock_in_number || currentStockInNumber || 'SI';
-        
-        // 上传文件到服务器
-        const uploadFormData = new FormData();
         const fileNames: string[] = [];
-        const customFileNames: string[] = []; // 存储自定义文件名
         
         for (let i = 0; i < batchReceiptDocuments.length; i++) {
           const file = batchReceiptDocuments[i];
-          if (file && file.originFileObj) {
-            const fileExtension = file.name.split('.').pop();
+          if (file && (file.originFileObj || file.file)) {
+            const fileName = file.name || file.fileName || `file-${i}`;
+            const fileExtension = fileName.split('.').pop();
             const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
             fileNames.push(newFileName);
             customFileNames.push(newFileName); // 保存自定义文件名
-            
-            // 创建新的File对象以使用新文件名
-            const newFile = new File([file.originFileObj], newFileName, {
-              type: file.originFileObj.type
-            });
-            uploadFormData.append('files', newFile);
-          } else if (file && file.file) {
-            // 处理另一种可能的文件对象格式
-            const fileExtension = file.name.split('.').pop();
-            const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
-            fileNames.push(newFileName);
-            customFileNames.push(newFileName); // 保存自定义文件名
-            
-            // 创建新的File对象以使用新文件名
-            const newFile = new File([file.file], newFileName, {
-              type: file.file.type
-            });
-            uploadFormData.append('files', newFile);
           }
         }
         
-        // 添加自定义文件名到表单数据
-        customFileNames.forEach((name, index) => {
-          uploadFormData.append(`custom_filenames[${index}]`, name);
-        });
-        
-        // 如果有文件需要上传
-        if (fileNames.length > 0) {
-          try {
-            const uploadResponse = await fetch('/api/upload/multiple', {
-              method: 'POST',
-              body: uploadFormData,
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-              }
-            });
-            
-            const uploadResult = await uploadResponse.json();
-            
-            if (uploadResult.success) {
-              // 使用上传后服务器返回的实际文件名
-              const uploadedFileNames = uploadResult.data.map((file: any) => file.filename);
-              stockInDocument = uploadedFileNames.join(', ');
-              console.log('批量入库文件上传成功，文件名:', stockInDocument);
-              
-              // 更新receiptDocuments以包含上传后的信息
-              batchReceiptDocuments = batchReceiptDocuments.map((file: any, index: number) => {
-                if (file && file.originFileObj) {
-                  return {
-                    ...file,
-                    name: uploadedFileNames[index],
-                    response: {
-                      filename: uploadedFileNames[index]
-                    }
-                  };
-                } else if (file && file.file) {
-                  return {
-                    ...file,
-                    name: uploadedFileNames[index],
-                    response: {
-                      filename: uploadedFileNames[index]
-                    }
-                  };
-                }
-                return file;
-              });
-            } else {
-              console.error('文件上传失败:', uploadResult.message);
-              message.warning('文件上传失败，将继续添加项目');
-              // 即使上传失败，也要使用生成的文件名
-              stockInDocument = fileNames.join(', ');
-            }
-          } catch (uploadError) {
-            console.error('文件上传错误:', uploadError);
-            message.warning('文件上传出错，将继续添加项目');
-            // 即使上传出错，也要使用生成的文件名
-            stockInDocument = fileNames.join(', ');
-          }
-        }
+        stockInDocument = fileNames.join(', ');
       }
 
       const stockInTime = values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss');
@@ -1035,9 +987,10 @@ const StockInPage: React.FC = () => {
         stock_in_date: stockInTime,
         supplier: values.supplier || '',
         remark: values.remark || '',
-        receipt_documents: batchReceiptDocuments,
+        receipt_documents: batchReceiptDocuments, // 保存原始文件对象，用于后续上传
         // 添加收货单据信息
-        stock_in_document: stockInDocument || '',
+        stock_in_document: stockInDocument || '', // 保存预期的文件名
+        custom_file_names: customFileNames, // 保存自定义文件名数组
         status: 'pending' as 'pending'
       };
 
@@ -1094,8 +1047,91 @@ const StockInPage: React.FC = () => {
         }
       }
       
+      // 在提交时上传文件
+      const itemsWithUploadedDocuments = await Promise.all(batchItems.map(async (item) => {
+        // 如果有收货单据文件，上传文件
+        if (item.receipt_documents && item.receipt_documents.length > 0) {
+          const stockInNumber = item.stock_in_number || currentStockInNumber || 'SI';
+          
+          // 上传文件到服务器
+          const uploadFormData = new FormData();
+          const customFileNames = item.custom_file_names || []; // 使用项目中保存的自定义文件名
+          
+          // 收集文件和自定义文件名
+          for (let i = 0; i < item.receipt_documents.length; i++) {
+            const file = item.receipt_documents[i];
+            if (file && (file.originFileObj || file.file)) {
+              // 使用预生成的文件名或生成新的文件名
+              const fileName = customFileNames[i] || (() => {
+                const originalName = file.name || file.fileName || `file-${i}`;
+                const fileExtension = originalName.split('.').pop();
+                return `${stockInNumber}_${i + 1}.${fileExtension}`;
+              })();
+              
+              // 创建新的File对象以使用新文件名
+              if (file.originFileObj) {
+                const newFile = new File([file.originFileObj], fileName, {
+                  type: file.originFileObj.type
+                });
+                uploadFormData.append('files', newFile);
+              } else if (file.file) {
+                const newFile = new File([file.file], fileName, {
+                  type: file.file.type
+                });
+                uploadFormData.append('files', newFile);
+              }
+            }
+          }
+          
+          // 添加自定义文件名到表单数据
+          customFileNames.forEach((name, index) => {
+            uploadFormData.append(`custom_filenames[${index}]`, name);
+          });
+          
+          // 上传文件
+          if (customFileNames.length > 0) {
+            try {
+              const uploadResponse = await fetch('/api/upload/multiple', {
+                method: 'POST',
+                body: uploadFormData,
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+              });
+              
+              const uploadResult = await uploadResponse.json();
+              
+              if (uploadResult.success) {
+                // 使用上传后服务器返回的实际文件名
+                const uploadedFileNames = uploadResult.data.map((file: any) => file.filename);
+                const stockInDocument = uploadedFileNames.join(', ');
+                
+                // 返回更新后的项目
+                return {
+                  ...item,
+                  stock_in_document: stockInDocument
+                };
+              } else {
+                console.error('文件上传失败:', uploadResult.message);
+                message.warning(`项目 ${item.imei || item.product_name} 的文件上传失败`);
+                // 保持原有的 stock_in_document
+                return item;
+              }
+            } catch (uploadError) {
+              console.error('文件上传错误:', uploadError);
+              message.warning(`项目 ${item.imei || item.product_name} 的文件上传出错`);
+              // 保持原有的 stock_in_document
+              return item;
+            }
+          }
+        }
+        
+        // 如果没有文件需要上传，返回原始项目
+        return item;
+      }));
+      
       // 调用后端API进行批量入库操作
-      const response = await batchStockIn(batchItems);
+      const response = await batchStockIn(itemsWithUploadedDocuments);
       
       if (response.success) {
         const successCount = response.successCount || 0;
@@ -1129,7 +1165,7 @@ const StockInPage: React.FC = () => {
           });
         } else {
           // 更新batchItems状态，标记成功和失败的项目
-          const updatedBatchItems = batchItems.map((item, index) => {
+          const updatedBatchItems = itemsWithUploadedDocuments.map((item, index) => {
             const error = errors.find(e => e.index === index);
             if (error) {
               return {

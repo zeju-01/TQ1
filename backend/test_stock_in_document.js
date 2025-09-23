@@ -25,7 +25,7 @@ const stockInData = {
   product_name: '测试产品',
   product_model: 'TEST-MODEL-001',
   operator: '中国移动',
-  imei: '555555555555555',
+  imei: '555555555555556', // 使用新的IMEI号避免冲突
   batch_number: 'BOX001',
   stock_in_quantity: 1,
   supplier: '测试供应商',

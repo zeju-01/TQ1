@@ -71,11 +71,12 @@ class InventoryController {
 
       logRequest('批量入库原始数据', stockInList);
       
-      // 为每个记录添加操作用户，并过滤掉已废弃的字段
+      // 为每个记录添加操作用户，并过滤掉已废弃的字段，但保留有用的字段（包括 stock_in_document）
       const processedList = stockInList.map(item => {
         const { stock_in_auto_number, receipt_documents, ...filteredItem } = item;
         return {
           ...filteredItem,
+          stock_in_document: item.stock_in_document, // 显式保留 stock_in_document 字段
           stock_in_by: req.user.username
         };
       });
