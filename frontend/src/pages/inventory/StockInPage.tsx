@@ -100,6 +100,9 @@ const StockInPage: React.FC = () => {
   const [updatingItem, setUpdatingItem] = useState<StockInItem | null>(null);
   const [updateForm] = Form.useForm();
   
+  // 收货单据文件列表状态
+  const [receiptFileList, setReceiptFileList] = useState<any[]>([]);
+  
   // 入库更新页面：搜索条件表单状态
   const [filterType, setFilterType] = useState<string>('contract_number');
   const [searchValue, setSearchValue] = useState<string>('');
@@ -430,6 +433,8 @@ const StockInPage: React.FC = () => {
         message.error('文件大小不能超过10MB！');
         return false;
       }
+      // 返回 true 允许自动上传，或者返回 false 并手动处理
+      // 这里我们返回 false，因为我们希望手动控制上传过程
       return false;
     },
     onChange(info: any) {
@@ -454,11 +459,14 @@ const StockInPage: React.FC = () => {
         message.error('文件大小不能超过10MB！');
         return false;
       }
+      // 返回 false 以手动控制上传过程
       return false;
     },
     onChange(info: any) {
       console.log('收货单据上传:', info.fileList);
-    }
+      setReceiptFileList(info.fileList);
+    },
+    fileList: receiptFileList
   };
 
   // Excel导入相关函数
@@ -668,6 +676,7 @@ const StockInPage: React.FC = () => {
         // 上传文件到服务器
         const uploadFormData = new FormData();
         const fileNames: string[] = [];
+        const customFileNames: string[] = []; // 存储自定义文件名
         
         for (let i = 0; i < receiptDocuments.length; i++) {
           const file = receiptDocuments[i];
@@ -677,6 +686,7 @@ const StockInPage: React.FC = () => {
             const fileExtension = file.name.split('.').pop();
             const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
             fileNames.push(newFileName);
+            customFileNames.push(newFileName); // 保存自定义文件名
             
             // 创建新的File对象以使用新文件名
             const newFile = new File([file.originFileObj], newFileName, {
@@ -689,6 +699,7 @@ const StockInPage: React.FC = () => {
             const fileExtension = file.name.split('.').pop();
             const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
             fileNames.push(newFileName);
+            customFileNames.push(newFileName); // 保存自定义文件名
             
             // 创建新的File对象以使用新文件名
             const newFile = new File([file.file], newFileName, {
@@ -696,8 +707,16 @@ const StockInPage: React.FC = () => {
             });
             uploadFormData.append('files', newFile);
             console.log(`添加文件到上传表单: ${newFileName}`);
+          } else if (file && file.response && file.response.filename) {
+            // 如果文件已经上传，直接使用响应中的文件名
+            fileNames.push(file.response.filename);
           }
         }
+        
+        // 添加自定义文件名到表单数据
+        customFileNames.forEach((name, index) => {
+          uploadFormData.append(`custom_filenames[${index}]`, name);
+        });
         
         // 如果有文件需要上传
         if (fileNames.length > 0) {
@@ -716,8 +735,9 @@ const StockInPage: React.FC = () => {
             console.log('文件上传响应数据:', uploadResult);
             
             if (uploadResult.success) {
-              // 使用上传后的文件名
-              stockInDocument = fileNames.join(', ');
+              // 使用上传后服务器返回的实际文件名
+              const uploadedFileNames = uploadResult.data.map((file: any) => file.filename);
+              stockInDocument = uploadedFileNames.join(', ');
               console.log('文件上传成功，文件名:', stockInDocument);
             } else {
               console.error('文件上传失败:', uploadResult.message);
@@ -805,6 +825,9 @@ const StockInPage: React.FC = () => {
         
         singleForm.resetFields(['imei', 'stock_in_date', 'quantity', 'receipt_documents']);
         
+        // 清空收货单据文件列表状态
+        setReceiptFileList([]);
+        
         singleForm.setFieldsValue({
           ...preservedValues,
           stock_in_number: newStockInNumber
@@ -844,7 +867,7 @@ const StockInPage: React.FC = () => {
         } else if (errorMessage.includes('IMEI')) {
           message.error('表单验证失败: ' + errorMessage);
         } else {
-          message.error('入库失败，请检查数据: ' + errorMessage);
+          message.error('入库失败: ' + errorMessage);
         }
       }
     } finally {
@@ -904,6 +927,7 @@ const StockInPage: React.FC = () => {
         // 上传文件到服务器
         const uploadFormData = new FormData();
         const fileNames: string[] = [];
+        const customFileNames: string[] = []; // 存储自定义文件名
         
         for (let i = 0; i < batchReceiptDocuments.length; i++) {
           const file = batchReceiptDocuments[i];
@@ -911,6 +935,7 @@ const StockInPage: React.FC = () => {
             const fileExtension = file.name.split('.').pop();
             const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
             fileNames.push(newFileName);
+            customFileNames.push(newFileName); // 保存自定义文件名
             
             // 创建新的File对象以使用新文件名
             const newFile = new File([file.originFileObj], newFileName, {
@@ -922,6 +947,7 @@ const StockInPage: React.FC = () => {
             const fileExtension = file.name.split('.').pop();
             const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
             fileNames.push(newFileName);
+            customFileNames.push(newFileName); // 保存自定义文件名
             
             // 创建新的File对象以使用新文件名
             const newFile = new File([file.file], newFileName, {
@@ -930,6 +956,11 @@ const StockInPage: React.FC = () => {
             uploadFormData.append('files', newFile);
           }
         }
+        
+        // 添加自定义文件名到表单数据
+        customFileNames.forEach((name, index) => {
+          uploadFormData.append(`custom_filenames[${index}]`, name);
+        });
         
         // 如果有文件需要上传
         if (fileNames.length > 0) {
@@ -945,8 +976,9 @@ const StockInPage: React.FC = () => {
             const uploadResult = await uploadResponse.json();
             
             if (uploadResult.success) {
-              // 使用上传后的文件名
-              stockInDocument = fileNames.join(', ');
+              // 使用上传后服务器返回的实际文件名
+              const uploadedFileNames = uploadResult.data.map((file: any) => file.filename);
+              stockInDocument = uploadedFileNames.join(', ');
               console.log('批量入库文件上传成功，文件名:', stockInDocument);
               
               // 更新receiptDocuments以包含上传后的信息
@@ -954,17 +986,17 @@ const StockInPage: React.FC = () => {
                 if (file && file.originFileObj) {
                   return {
                     ...file,
-                    name: fileNames[index],
+                    name: uploadedFileNames[index],
                     response: {
-                      filename: fileNames[index]
+                      filename: uploadedFileNames[index]
                     }
                   };
                 } else if (file && file.file) {
                   return {
                     ...file,
-                    name: fileNames[index],
+                    name: uploadedFileNames[index],
                     response: {
-                      filename: fileNames[index]
+                      filename: uploadedFileNames[index]
                     }
                   };
                 }
@@ -1004,6 +1036,8 @@ const StockInPage: React.FC = () => {
         supplier: values.supplier || '',
         remark: values.remark || '',
         receipt_documents: batchReceiptDocuments,
+        // 添加收货单据信息
+        stock_in_document: stockInDocument || '',
         status: 'pending' as 'pending'
       };
 
@@ -1071,6 +1105,8 @@ const StockInPage: React.FC = () => {
         if (failedCount === 0) {
           message.success(`批量入库完成！成功 ${successCount} 条`);
           setBatchItems([]);
+          // 清空收货单据文件列表状态
+          setReceiptFileList([]);
           
           const currentValues = batchForm.getFieldsValue();
           const preservedValues = {
@@ -1904,7 +1940,19 @@ const StockInPage: React.FC = () => {
                     label="收货单据"
                     name="receipt_documents"
                   >
-                    <Upload {...receiptUploadProps} listType="picture-card">
+                    <Upload 
+                      {...receiptUploadProps} 
+                      listType="picture-card"
+                      fileList={receiptFileList}
+                      onChange={(info) => {
+                        console.log('收货单据上传:', info.fileList);
+                        setReceiptFileList(info.fileList);
+                        // 同时更新表单字段的值
+                        singleForm.setFieldsValue({
+                          receipt_documents: info.fileList
+                        });
+                      }}
+                    >
                       <div>
                         <PlusOutlined />
                         <div style={{ marginTop: 8 }}>上传文件</div>
@@ -2111,7 +2159,19 @@ const StockInPage: React.FC = () => {
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                         {/* 收货单据上传控件 */}
                         <div style={{ flex: 1, minWidth: '200px' }}>
-                          <Upload {...receiptUploadProps} listType="picture-card">
+                          <Upload 
+                            {...receiptUploadProps} 
+                            listType="picture-card"
+                            fileList={receiptFileList}
+                            onChange={(info) => {
+                              console.log('收货单据上传:', info.fileList);
+                              setReceiptFileList(info.fileList);
+                              // 同时更新表单字段的值
+                              batchForm.setFieldsValue({
+                                receipt_documents: info.fileList
+                              });
+                            }}
+                          >
                             <div>
                               <PlusOutlined />
                               <div style={{ marginTop: 8 }}>上传文件</div>

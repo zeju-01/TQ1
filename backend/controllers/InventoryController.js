@@ -25,15 +25,16 @@ class InventoryController {
         });
       }
       
-      // 过滤掉已废弃的字段
-      const { stock_in_auto_number, ...filteredBody } = req.body;
+      // 过滤掉已废弃的字段，但保留有用的字段（包括 stock_in_document）
+      const { stock_in_auto_number, receipt_documents, ...filteredBody } = req.body;
       
       const stockInData = {
         ...filteredBody,
         stock_in_by: req.user ? req.user.username : 'unknown'
       };
       
-      logRequest('过滤后的数据', stockInData);
+      console.log('过滤后的数据:', stockInData);
+      console.log('stock_in_document 字段值:', stockInData.stock_in_document);
 
       // 如果提供了产品ID，获取产品信息
       if (stockInData.product_id) {
@@ -72,7 +73,7 @@ class InventoryController {
       
       // 为每个记录添加操作用户，并过滤掉已废弃的字段
       const processedList = stockInList.map(item => {
-        const { stock_in_auto_number, ...filteredItem } = item;
+        const { stock_in_auto_number, receipt_documents, ...filteredItem } = item;
         return {
           ...filteredItem,
           stock_in_by: req.user.username

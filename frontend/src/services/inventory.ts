@@ -43,7 +43,7 @@ export interface StockInResponse {
 }
 
 // 单个入库
-export const stockIn = async (stockInData: Partial<StockInRequest> & { receipt_documents?: any[] }): Promise<StockInResponse> => {
+export const stockIn = async (stockInData: Partial<StockInRequest> & { receipt_documents?: any[], stock_in_document?: string }): Promise<StockInResponse> => {
   try {
     console.log('库存服务接收到的数据:', stockInData);
     
@@ -67,24 +67,30 @@ export const stockIn = async (stockInData: Partial<StockInRequest> & { receipt_d
       throw new Error('IMEI号格式不正确，应为15位数字');
     }
     
-    // 如果没有提供 stock_in_document，则处理收货单据信息
+    // 处理收货单据信息 - 优先使用已有的 stock_in_document 字段
     let stockInDocument = stockInData.stock_in_document || '';
+    console.log('初始 stockInDocument:', stockInDocument);
+    
+    // 如果 stock_in_document 为空但有 receipt_documents，则从文件名生成
     if (!stockInDocument && stockInData.receipt_documents && stockInData.receipt_documents.length > 0) {
       // 检查文件对象的多种可能格式
-      stockInDocument = stockInData.receipt_documents.map((file: any) => {
+      const fileNames = stockInData.receipt_documents.map((file: any) => {
+        console.log('处理文件对象:', file);
         // 如果已经有response.filename，使用它
         if (file.response && file.response.filename) {
           return file.response.filename;
         }
         // 否则使用文件名
         return file.name || file.fileName || '收货单据';
-      }).join(', ');
+      });
+      stockInDocument = fileNames.join(', ');
+      console.log('从 receipt_documents 生成的 stockInDocument:', stockInDocument);
     }
     
     // 添加收货单据信息到请求数据
     const requestData = {
       ...stockInData,
-      stock_in_document: stockInDocument
+      stock_in_document: stockInDocument || undefined
     };
     
     console.log('发送到后端的请求数据:', requestData);
@@ -126,21 +132,17 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
     
     // 转换前端数据为后端需要的格式
     const backendStockInList = stockInList.map(item => {
-      // 处理收货单据信息，使用新生成的文件名格式
+      // 处理收货单据信息
       let stockInDocument = '';
       if (item.receipt_documents && item.receipt_documents.length > 0) {
-        const stockInNumber = item.stock_in_number || 'SI';
-        // 生成新的文件名格式：[入库单号]_[序号].[扩展名]
-        stockInDocument = item.receipt_documents.map((file: any, index: number) => {
-          // 如果文件已经上传并有响应，使用响应中的文件名
+        // 检查文件对象的多种可能格式
+        stockInDocument = item.receipt_documents.map((file: any) => {
+          // 如果已经有response.filename，使用它
           if (file.response && file.response.filename) {
             return file.response.filename;
           }
-          
-          // 否则生成新的文件名
-          const backendFileName = file.name || file.fileName || `document_${index + 1}`;
-          const fileExtension = backendFileName.split('.').pop();
-          return `${stockInNumber}_${index + 1}.${fileExtension}`;
+          // 否则使用文件名
+          return file.name || file.fileName || '收货单据';
         }).join(', ');
       } else if (item.stock_in_document) {
         // 如果已经有stock_in_document字段，直接使用它
@@ -164,7 +166,7 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
         // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
         stock_in_date: item.stock_in_date || new Date().toISOString(),
         stock_in_by: 'current_user', // 这里应该从认证信息中获取当前用户
-        // 添加收货单据信息，使用新生成的文件名格式
+        // 添加收货单据信息
         stock_in_document: stockInDocument || undefined
       };
     });

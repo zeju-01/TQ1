@@ -1,7 +1,10 @@
-// 模拟完整的前端到后端流程
-const fs = require('fs');
-const path = require('path');
-const InventoryController = require('./controllers/InventoryController');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import InventoryController from './controllers/InventoryController.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 console.log('=== 开始完整流程测试 ===\n');
 
