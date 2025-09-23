@@ -185,7 +185,7 @@ const createTables = async () => {
     INSERT OR IGNORE INTO couriers (name, code, description, contact_person, phone, email, address, tracking_url) VALUES 
     ('顺丰速运', 'SF', '中国领先的快递物流综合服务商', '王总', '95338', 'service@sf-express.com', '深圳市福田区莲花街道福中三路1号', 'https://www.sf-express.com/cn/sc/dynamic_function/waybill/#search/bill-number/'),
     ('中通快递', 'ZTO', '中通快递股份有限公司', '李经理', '95311', 'service@zto.com', '上海市青浦区华徐公路1726号', 'https://www.zto.com/'),
-    ('圆通快递', 'YTO', '圆通速递有限公司', '张主管', '95554', 'service@yto.net.cn', '上海市青浦区华德路1008号', 'https://www.yto.net.cn/'),
+    ('圆通快递', 'YTO', '圆通速递有限公司', '张主管', '95311', 'service@yto.net.cn', '上海市青浦区华德路1008号', 'https://www.yto.net.cn/'),
     ('申通快递', 'STO', '申通快递股份有限公司', '陈经理', '95543', 'service@sto.cn', '上海市奉贤区银春路1688号', 'https://www.sto.cn/'),
     ('韵达快递', 'YUNDA', '韵达股份有限公司', '刘主任', '95546', 'service@yunda.co', '上海市青浦区华徐公路1568号', 'https://www.yunda.co/')
   `);
@@ -207,28 +207,28 @@ const createTables = async () => {
       after_sales_status VARCHAR(20),
       other_status VARCHAR(20),
       stock_in_number VARCHAR(50),
-      stock_in_auto_number VARCHAR(50) UNIQUE NOT NULL,
+      stock_in_auto_number VARCHAR(50),  -- 已废弃，不再使用
       supplier VARCHAR(100),
       factory_name VARCHAR(100),
       factory_order VARCHAR(50),
-      stock_in_date DATETIME DEFAULT (datetime('now', '+8 hours')),
+      stock_in_date DATETIME,  -- 移除了默认值
       stock_in_contract_number VARCHAR(50),
       stock_in_document VARCHAR(100),
       stock_in_document_path VARCHAR(255),
-      stock_in_time DATETIME DEFAULT (datetime('now', '+8 hours')),
+      stock_in_time DATETIME,
       stock_in_by VARCHAR(50),
-      return_time DATETIME,
+      return_time DATETIME,    -- 移除了默认值
       returned_by INTEGER,
       return_reason VARCHAR(100),
       return_type VARCHAR(20),
       return_notes TEXT,
-      after_sales_time DATETIME,
+      after_sales_time DATETIME,  -- 移除了默认值
       after_sales_by INTEGER,
       stock_in_notes TEXT,
       stock_out_number VARCHAR(50),
       stock_out_document VARCHAR(100),
       stock_out_document_path VARCHAR(255),
-      stock_out_date DATETIME,
+      stock_out_date DATETIME,  -- 移除了默认值
       stock_out_quantity INTEGER,
       stock_out_contract_number VARCHAR(50),
       sales_order_number VARCHAR(50),
@@ -236,15 +236,15 @@ const createTables = async () => {
       delivery_info TEXT,
       courier_company VARCHAR(50),
       tracking_number VARCHAR(50),
-      stock_out_time DATETIME,
+      stock_out_time DATETIME,  -- 移除了默认值
       stock_out_by INTEGER,
       stock_out_notes TEXT,
       stock_out_status VARCHAR(20),
       quantity INTEGER,
       transaction_type VARCHAR(10) NOT NULL,
       customer VARCHAR(100),
-      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),
-      updated_at DATETIME DEFAULT (datetime('now', '+8 hours'))
+      created_at DATETIME DEFAULT (datetime('now', '+8 hours')),  -- 保留created_at的默认值
+      updated_at DATETIME  -- 移除了默认值
     )
   `);
 
@@ -344,57 +344,11 @@ const getNextSequence = async (sequenceName) => {
   }
 };
 
-// 生成入库自动编号
-const generateStockInNumber = async () => {
-  try {
-    const today = new Date().toLocaleDateString('zh-CN', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit',
-      timeZone: 'Asia/Shanghai'
-    }).replace(/\//g, '');
-    const result = await db.get(
-      `SELECT COALESCE(MAX(CAST(SUBSTR(stock_in_auto_number, -6) AS INTEGER)), 0) + 1 as seq 
-       FROM inventory 
-       WHERE stock_in_auto_number LIKE 'IN${today}%'`
-    );
-    const seq = result.seq.toString().padStart(6, '0');
-    return `IN${today}${seq}`;
-  } catch (error) {
-    console.error('生成入库编号失败:', error);
-    throw error;
-  }
-};
-
-// 生成出库自动编号
-const generateStockOutNumber = async () => {
-  try {
-    const today = new Date().toLocaleDateString('zh-CN', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit',
-      timeZone: 'Asia/Shanghai'
-    }).replace(/\//g, '');
-    const result = await db.get(
-      `SELECT COALESCE(MAX(CAST(SUBSTR(stock_out_number, -6) AS INTEGER)), 0) + 1 as seq 
-       FROM inventory 
-       WHERE stock_out_number LIKE 'OUT${today}%'`
-    );
-    const seq = result.seq.toString().padStart(6, '0');
-    return `OUT${today}${seq}`;
-  } catch (error) {
-    console.error('生成出库编号失败:', error);
-    throw error;
-  }
-};
-
 module.exports = {
   db,
   testConnection,
   executeQuery,
   executeTransaction,
   getNextSequence,
-  generateStockInNumber,
-  generateStockOutNumber,
   initDatabase
 };

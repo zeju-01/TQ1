@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
     `after_sales_status` VARCHAR(20) NULL COMMENT '售后状态',
     `other_status` VARCHAR(20) NULL COMMENT '其它状态',
     `stock_in_number` VARCHAR(50) NULL COMMENT '入库单号',
-    `stock_in_auto_number` VARCHAR(50) UNIQUE NOT NULL COMMENT '系统自动编号',
+    `stock_in_auto_number` VARCHAR(50) NULL COMMENT '系统自动编号（已废弃）',
     `supplier` VARCHAR(100) NULL COMMENT '供应商',
     `factory_name` VARCHAR(100) NULL COMMENT '工厂名称',
     `factory_order` VARCHAR(50) NULL COMMENT '工厂工单',
@@ -153,7 +153,6 @@ CREATE TABLE IF NOT EXISTS `sequence_counters` (
 
 -- 初始化序列计数器
 INSERT INTO `sequence_counters` (`name`, `current_value`) VALUES 
-('stock_in_auto_number', 0),
 ('stock_out_auto_number', 0)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
@@ -181,24 +180,6 @@ BEGIN
 END //
 DELIMITER ;
 
--- 创建生成入库自动编号的函数
-DELIMITER //
-CREATE FUNCTION GenerateStockInNumber() RETURNS VARCHAR(50)
-READS SQL DATA
-DETERMINISTIC
-BEGIN
-    DECLARE next_val BIGINT;
-    DECLARE date_str VARCHAR(8);
-    DECLARE result VARCHAR(50);
-    
-    CALL GetNextSequence('stock_in_auto_number', next_val);
-    SET date_str = DATE_FORMAT(NOW(), '%Y%m%d');
-    SET result = CONCAT('IN', date_str, LPAD(next_val, 6, '0'));
-    
-    RETURN result;
-END //
-DELIMITER ;
-
 -- 创建生成出库自动编号的函数
 DELIMITER //
 CREATE FUNCTION GenerateStockOutNumber() RETURNS VARCHAR(50)
@@ -217,14 +198,3 @@ BEGIN
 END //
 DELIMITER ;
 
--- 创建触发器自动生成入库编号
-DELIMITER //
-CREATE TRIGGER tr_inventory_stock_in_auto_number
-BEFORE INSERT ON `inventory`
-FOR EACH ROW
-BEGIN
-    IF NEW.stock_in_auto_number IS NULL OR NEW.stock_in_auto_number = '' THEN
-        SET NEW.stock_in_auto_number = GenerateStockInNumber();
-    END IF;
-END //
-DELIMITER ;

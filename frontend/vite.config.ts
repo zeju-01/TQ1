@@ -13,11 +13,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
+    port: 5173,
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5001', // 更新为新的后端端口
+        target: 'http://localhost:5001', // 更新为新的后端端口5002
         changeOrigin: true,
       },
     },

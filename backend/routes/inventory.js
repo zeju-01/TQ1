@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const InventoryController = require('../controllers/InventoryController');
 const { authenticateToken, requireOperator } = require('../middleware/auth');
-const { validateStockIn, validateStockOut, validateId, validatePagination, handleValidationErrors } = require('../utils/validation');
+const { validateStockIn, validateStockOut, validateId, validatePagination, handleValidationErrors, validateIMEI } = require('../utils/validation');
 const { body } = require('express-validator');
 
 // 获取库存列表
@@ -21,6 +21,13 @@ router.get('/stats',
 // 检查IMEI是否可用
 router.get('/check-imei/:imei', 
   InventoryController.checkIMEI
+);
+
+// 获取最大的入库单号
+router.get('/max-stock-in-number', 
+  authenticateToken,
+  requireOperator,
+  InventoryController.getMaxStockInNumber
 );
 
 // 根据IMEI查询库存

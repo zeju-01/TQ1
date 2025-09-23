@@ -134,7 +134,6 @@ export interface Inventory {
   after_sales_status?: string;
   other_status?: string;
   stock_in_number?: string;
-  stock_in_auto_number: string;
   supplier?: string;
   factory_name?: string;
   factory_order?: string;

@@ -3,12 +3,13 @@ const InventoryModel = require('../models/Inventory');
 const ProductModel = require('../models/Product');
 const { successResponse, errorResponse, paginatedResponse, calculatePagination } = require('../utils/response');
 const { parsePaginationParams } = require('../utils/response');
+const { logRequest } = require('../utils/debugLogger');
 
 class InventoryController {
   // 入库操作
   static async stockIn(req, res) {
     try {
-      console.log('后端接收到的入库请求数据:', req.body);
+      logRequest('原始请求数据', req.body);
       console.log('请求头信息:', req.headers);
       console.log('用户信息:', req.user);
       
@@ -24,10 +25,15 @@ class InventoryController {
         });
       }
       
+      // 过滤掉已废弃的字段
+      const { stock_in_auto_number, ...filteredBody } = req.body;
+      
       const stockInData = {
-        ...req.body,
+        ...filteredBody,
         stock_in_by: req.user ? req.user.username : 'unknown'
       };
+      
+      logRequest('过滤后的数据', stockInData);
 
       // 如果提供了产品ID，获取产品信息
       if (stockInData.product_id) {
@@ -62,11 +68,18 @@ class InventoryController {
         return res.status(400).json(errorResponse('入库列表不能为空', 'EMPTY_STOCK_IN_LIST'));
       }
 
-      // 为每个记录添加操作用户
-      const processedList = stockInList.map(item => ({
-        ...item,
-        stock_in_by: req.user.username
-      }));
+      logRequest('批量入库原始数据', stockInList);
+      
+      // 为每个记录添加操作用户，并过滤掉已废弃的字段
+      const processedList = stockInList.map(item => {
+        const { stock_in_auto_number, ...filteredItem } = item;
+        return {
+          ...filteredItem,
+          stock_in_by: req.user.username
+        };
+      });
+      
+      logRequest('批量入库处理后数据', processedList);
 
       const result = await InventoryModel.batchStockIn(processedList);
       
@@ -257,6 +270,17 @@ class InventoryController {
     } catch (error) {
       console.error('检查IMEI错误:', error);
       res.status(500).json(errorResponse('检查IMEI失败', 'CHECK_IMEI_FAILED'));
+    }
+  }
+  
+  // 获取最大的入库单号
+  static async getMaxStockInNumber(req, res) {
+    try {
+      const maxStockInNumber = await InventoryModel.getMaxStockInNumber();
+      res.json(successResponse('获取最大入库单号成功', { maxStockInNumber }));
+    } catch (error) {
+      console.error('获取最大入库单号错误:', error);
+      res.status(500).json(errorResponse('获取最大入库单号失败', 'GET_MAX_STOCK_IN_NUMBER_FAILED'));
     }
   }
 }

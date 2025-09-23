@@ -47,13 +47,30 @@ class UploadController {
         return res.status(400).json(errorResponse('没有上传文件', 'NO_FILE_UPLOADED'));
       }
 
+      // 检查是否需要重命名文件
+      let finalFilename = req.file.filename;
+      let finalPath = req.file.path;
+      let finalUrl = `/uploads/${req.file.filename}`;
+      
+      // 如果前端传递了自定义文件名，则重命名文件
+      if (req.body.custom_filename) {
+        const customFilename = req.body.custom_filename;
+        const uploadDir = path.join(__dirname, '../uploads');
+        finalPath = path.join(uploadDir, customFilename);
+        finalFilename = customFilename;
+        finalUrl = `/uploads/${customFilename}`;
+        
+        // 重命名文件
+        fs.renameSync(req.file.path, finalPath);
+      }
+
       const fileInfo = {
-        filename: req.file.filename,
+        filename: finalFilename,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        path: req.file.path,
-        url: `/uploads/${req.file.filename}`
+        path: finalPath,
+        url: finalUrl
       };
 
       res.json(successResponse('文件上传成功', fileInfo));
@@ -72,14 +89,38 @@ class UploadController {
         return res.status(400).json(errorResponse('没有上传文件', 'NO_FILES_UPLOADED'));
       }
 
-      const filesInfo = req.files.map(file => ({
-        filename: file.filename,
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        path: file.path,
-        url: `/uploads/${file.filename}`
-      }));
+      const filesInfo = [];
+      
+      // 处理每个上传的文件
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        
+        // 检查是否需要重命名文件
+        let finalFilename = file.filename;
+        let finalPath = file.path;
+        let finalUrl = `/uploads/${file.filename}`;
+        
+        // 如果前端传递了自定义文件名，则重命名文件
+        if (req.body.custom_filenames && req.body.custom_filenames[i]) {
+          const customFilename = req.body.custom_filenames[i];
+          const uploadDir = path.join(__dirname, '../uploads');
+          finalPath = path.join(uploadDir, customFilename);
+          finalFilename = customFilename;
+          finalUrl = `/uploads/${customFilename}`;
+          
+          // 重命名文件
+          fs.renameSync(file.path, finalPath);
+        }
+        
+        filesInfo.push({
+          filename: finalFilename,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: finalPath,
+          url: finalUrl
+        });
+      }
 
       res.json(successResponse('文件上传成功', filesInfo));
     } catch (error) {

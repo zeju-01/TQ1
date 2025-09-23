@@ -38,7 +38,7 @@ import * as XLSX from 'xlsx';
 import { productService } from '../../services/products';
 import { operatorService } from '../../services/operators';
 import { supplierService } from '../../services/suppliers';
-import { stockIn, batchStockIn } from '../../services/inventory';
+import { stockIn, batchStockIn, getMaxStockInNumber } from '../../services/inventory';
 import type { Product } from '../../types';
 import type { Operator } from '../../services/operators';
 import type { Supplier } from '../../types';
@@ -60,7 +60,8 @@ interface StockInItem {
   quantity: number;
   contract_number: string;
   stock_in_number: string;
-  stock_in_time: string;
+  // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+  stock_in_date: string;
   supplier: string;
   remark: string;
   receipt_documents: any[];
@@ -353,26 +354,42 @@ const StockInPage: React.FC = () => {
     return newNumber;
   };
 
+  // 从后端获取最大入库单号
+  const fetchMaxStockInNumber = async () => {
+    try {
+      const maxNumber = await getMaxStockInNumber();
+      return maxNumber;
+    } catch (error) {
+      console.error('获取最大入库单号失败:', error);
+      // 如果获取失败，使用本地生成的单号
+      return generateStockInNumber();
+    }
+  };
+
   // 生成并递增入库单号
-  const generateAndIncrementStockInNumber = () => {
-    const newNumber = generateStockInNumber();
+  const generateAndIncrementStockInNumber = async () => {
+    const newNumber = await fetchMaxStockInNumber();
     setStockInCounter(prev => prev + 1);
     return newNumber;
   };
 
   // 组件挂载时生成初始入库单号
   useEffect(() => {
-    const initialStockInNumber = generateStockInNumber();
-    setCurrentStockInNumber(initialStockInNumber);
-    setStockInCounter(prev => prev + 1);
+    const loadInitialStockInNumber = async () => {
+      const initialStockInNumber = await fetchMaxStockInNumber();
+      setCurrentStockInNumber(initialStockInNumber);
+      setStockInCounter(prev => prev + 1);
+      
+      singleForm.setFieldsValue({
+        stock_in_number: initialStockInNumber
+      });
+      
+      batchForm.setFieldsValue({
+        stock_in_number: initialStockInNumber
+      });
+    };
     
-    singleForm.setFieldsValue({
-      stock_in_number: initialStockInNumber
-    });
-    
-    batchForm.setFieldsValue({
-      stock_in_number: initialStockInNumber
-    });
+    loadInitialStockInNumber();
   }, []);
 
   useEffect(() => {
@@ -453,7 +470,8 @@ const StockInPage: React.FC = () => {
         message.warning('请先选择产品名称！');
         return;
       }
-      if (!formValues.stock_in_time) {
+      // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+      if (!formValues.stock_in_date) {
         message.warning('请先选择入库时间！');
         return;
       }
@@ -527,7 +545,8 @@ const StockInPage: React.FC = () => {
             if (formValues.contract_number) formData.contract_number = formValues.contract_number;
             if (formValues.remark) formData.remark = formValues.remark;
             if (formValues.stock_in_number) formData.stock_in_number = formValues.stock_in_number;
-            if (formValues.stock_in_time) formData.stock_in_time = formValues.stock_in_time.format('YYYY-MM-DD HH:mm:ss');
+            // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+            if (formValues.stock_in_date) formData.stock_in_date = formValues.stock_in_date.format('YYYY-MM-DD HH:mm:ss');
             
             return {
               id: Date.now() + index,
@@ -540,7 +559,8 @@ const StockInPage: React.FC = () => {
               quantity: parseInt(item.quantity) || parseInt(item.Quantity) || parseInt(item['数量']) || formValues.quantity || 1,
               contract_number: item.contract_number || item.contractNumber || item['合同编号'] || formData.contract_number || '',
               stock_in_number: item.stock_in_number || item.stockInNumber || item['入库单号'] || formData.stock_in_number || '',
-              stock_in_time: item.stock_in_time || item.stockInTime || item['入库时间'] || formData.stock_in_time || dayjs().format('YYYY-MM-DD HH:mm:ss'),
+              // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+              stock_in_date: item.stock_in_date || item.stockInTime || item['入库时间'] || formData.stock_in_date || dayjs().format('YYYY-MM-DD HH:mm:ss'),
               supplier: item.supplier || item.Supplier || item['供应商'] || formData.supplier || '',
               remark: item.remark || item.Remark || item['备注'] || formData.remark || '',
               receipt_documents: [],
@@ -570,7 +590,7 @@ const StockInPage: React.FC = () => {
       message.warning('请先选择产品名称！');
       return;
     }
-    if (!formValues.stock_in_time) {
+    if (!formValues.stock_in_date) {
       message.warning('请先选择入库时间！');
       return;
     }
@@ -623,6 +643,8 @@ const StockInPage: React.FC = () => {
       setLoading(true);
       const values = await singleForm.validateFields();
       
+      console.log('表单值:', values);
+      
       // 验证IMEI号格式（如果提供了IMEI号）
       if (values.imei && !/^\d{15}$/.test(values.imei)) {
         message.error('IMEI号格式不正确，应为15位数字');
@@ -635,24 +657,86 @@ const StockInPage: React.FC = () => {
       const productName = selectedProduct ? selectedProduct.name || '' : values.product_name || '';
       
       let receiptDocuments = values.receipt_documents || [];
-      if (receiptDocuments.length > 0) {
+      let stockInDocument = '';
+      
+      console.log('收货单据文件:', receiptDocuments);
+      
+      // 如果有收货单据文件，先上传文件
+      if (receiptDocuments && receiptDocuments.length > 0) {
         const stockInNumber = values.stock_in_number || currentStockInNumber || 'SI';
         
-        receiptDocuments = receiptDocuments.map((file: any, index: number) => {
-          if (file && typeof file === 'object' && file.name) {
+        // 上传文件到服务器
+        const uploadFormData = new FormData();
+        const fileNames: string[] = [];
+        
+        for (let i = 0; i < receiptDocuments.length; i++) {
+          const file = receiptDocuments[i];
+          console.log(`处理文件 ${i}:`, file);
+          
+          if (file && file.originFileObj) {
             const fileExtension = file.name.split('.').pop();
-            const newFileName = `${stockInNumber}_${index + 1}.${fileExtension}`;
+            const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
+            fileNames.push(newFileName);
             
-            return {
-              ...file,
-              name: newFileName
-            };
+            // 创建新的File对象以使用新文件名
+            const newFile = new File([file.originFileObj], newFileName, {
+              type: file.originFileObj.type
+            });
+            uploadFormData.append('files', newFile);
+            console.log(`添加文件到上传表单: ${newFileName}`);
+          } else if (file && file.file) {
+            // 处理另一种可能的文件对象格式
+            const fileExtension = file.name.split('.').pop();
+            const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
+            fileNames.push(newFileName);
+            
+            // 创建新的File对象以使用新文件名
+            const newFile = new File([file.file], newFileName, {
+              type: file.file.type
+            });
+            uploadFormData.append('files', newFile);
+            console.log(`添加文件到上传表单: ${newFileName}`);
           }
-          return file;
-        });
+        }
+        
+        // 如果有文件需要上传
+        if (fileNames.length > 0) {
+          console.log('开始上传文件，文件名:', fileNames);
+          try {
+            const uploadResponse = await fetch('/api/upload/multiple', {
+              method: 'POST',
+              body: uploadFormData,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            console.log('文件上传响应状态:', uploadResponse.status);
+            const uploadResult = await uploadResponse.json();
+            console.log('文件上传响应数据:', uploadResult);
+            
+            if (uploadResult.success) {
+              // 使用上传后的文件名
+              stockInDocument = fileNames.join(', ');
+              console.log('文件上传成功，文件名:', stockInDocument);
+            } else {
+              console.error('文件上传失败:', uploadResult.message);
+              message.warning('文件上传失败，将继续入库操作');
+              // 即使上传失败，也要使用生成的文件名
+              stockInDocument = fileNames.join(', ');
+            }
+          } catch (uploadError) {
+            console.error('文件上传错误:', uploadError);
+            message.warning('文件上传出错，将继续入库操作');
+            // 即使上传出错，也要使用生成的文件名
+            stockInDocument = fileNames.join(', ');
+          }
+        } else {
+          console.log('没有文件需要上传');
+        }
+      } else {
+        console.log('没有收货单据文件');
       }
-      
-      const stockInTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
       
       // 准备入库数据
       const stockInData = {
@@ -668,9 +752,13 @@ const StockInPage: React.FC = () => {
         stock_in_notes: values.remark || '',
         // 添加入库单号字段
         stock_in_number: values.stock_in_number || '',
-        // 修复字段名不匹配的问题：前端使用 stock_in_time，后端需要 stock_in_date
-        stock_in_date: values.stock_in_time ? values.stock_in_time.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss')
+        // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
+        stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        // 添加收货单据信息
+        stock_in_document: stockInDocument || ''
       };
+      
+      console.log('准备发送的入库数据:', stockInData);
       
       // 添加调试日志
       console.log('准备发送的入库数据:', stockInData);
@@ -701,7 +789,7 @@ const StockInPage: React.FC = () => {
       if (response.success) {
         message.success('入库成功！');
         
-        const newStockInNumber = generateAndIncrementStockInNumber();
+        const newStockInNumber = await generateAndIncrementStockInNumber();
         setCurrentStockInNumber(newStockInNumber);
         
         const preservedValues = {
@@ -715,7 +803,7 @@ const StockInPage: React.FC = () => {
           stock_in_number: newStockInNumber
         };
         
-        singleForm.resetFields(['imei', 'stock_in_time', 'quantity', 'receipt_documents']);
+        singleForm.resetFields(['imei', 'stock_in_date', 'quantity', 'receipt_documents']);
         
         singleForm.setFieldsValue({
           ...preservedValues,
@@ -732,7 +820,7 @@ const StockInPage: React.FC = () => {
           switch (field.name[0]) {
             case 'product_name':
               return '产品名称不能为空';
-            case 'stock_in_time':
+            case 'stock_in_date':
               return '入库时间不能为空';
             case 'quantity':
               return '数量不能为空';
@@ -771,7 +859,7 @@ const StockInPage: React.FC = () => {
       message.warning('请选择产品名称！');
       return false;
     }
-    if (!values.stock_in_time) {
+    if (!values.stock_in_date) {
       message.warning('请选择入库时间！');
       return false;
     }
@@ -789,7 +877,7 @@ const StockInPage: React.FC = () => {
     return true;
   };
 
-  const handleAddBatchItem = () => {
+  const handleAddBatchItem = async () => {
     if (!validateBatchForm()) {
       return;
     }
@@ -806,25 +894,98 @@ const StockInPage: React.FC = () => {
       const selectedProduct = products.find(p => p.id === values.product_name);
       const productModel = selectedProduct ? (selectedProduct.model || '') : '';
 
-      let receiptDocuments = values.receipt_documents || [];
-      if (receiptDocuments.length > 0) {
+      let batchReceiptDocuments = values.receipt_documents || [];
+      let stockInDocument = '';
+      
+      // 如果有收货单据文件，先上传文件
+      if (batchReceiptDocuments && batchReceiptDocuments.length > 0) {
         const stockInNumber = values.stock_in_number || currentStockInNumber || 'SI';
         
-        receiptDocuments = receiptDocuments.map((file: any, index: number) => {
-          if (file && typeof file === 'object' && file.name) {
+        // 上传文件到服务器
+        const uploadFormData = new FormData();
+        const fileNames: string[] = [];
+        
+        for (let i = 0; i < batchReceiptDocuments.length; i++) {
+          const file = batchReceiptDocuments[i];
+          if (file && file.originFileObj) {
             const fileExtension = file.name.split('.').pop();
-            const newFileName = `${stockInNumber}_${index + 1}.${fileExtension}`;
+            const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
+            fileNames.push(newFileName);
             
-            return {
-              ...file,
-              name: newFileName
-            };
+            // 创建新的File对象以使用新文件名
+            const newFile = new File([file.originFileObj], newFileName, {
+              type: file.originFileObj.type
+            });
+            uploadFormData.append('files', newFile);
+          } else if (file && file.file) {
+            // 处理另一种可能的文件对象格式
+            const fileExtension = file.name.split('.').pop();
+            const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
+            fileNames.push(newFileName);
+            
+            // 创建新的File对象以使用新文件名
+            const newFile = new File([file.file], newFileName, {
+              type: file.file.type
+            });
+            uploadFormData.append('files', newFile);
           }
-          return file;
-        });
+        }
+        
+        // 如果有文件需要上传
+        if (fileNames.length > 0) {
+          try {
+            const uploadResponse = await fetch('/api/upload/multiple', {
+              method: 'POST',
+              body: uploadFormData,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            
+            if (uploadResult.success) {
+              // 使用上传后的文件名
+              stockInDocument = fileNames.join(', ');
+              console.log('批量入库文件上传成功，文件名:', stockInDocument);
+              
+              // 更新receiptDocuments以包含上传后的信息
+              batchReceiptDocuments = batchReceiptDocuments.map((file: any, index: number) => {
+                if (file && file.originFileObj) {
+                  return {
+                    ...file,
+                    name: fileNames[index],
+                    response: {
+                      filename: fileNames[index]
+                    }
+                  };
+                } else if (file && file.file) {
+                  return {
+                    ...file,
+                    name: fileNames[index],
+                    response: {
+                      filename: fileNames[index]
+                    }
+                  };
+                }
+                return file;
+              });
+            } else {
+              console.error('文件上传失败:', uploadResult.message);
+              message.warning('文件上传失败，将继续添加项目');
+              // 即使上传失败，也要使用生成的文件名
+              stockInDocument = fileNames.join(', ');
+            }
+          } catch (uploadError) {
+            console.error('文件上传错误:', uploadError);
+            message.warning('文件上传出错，将继续添加项目');
+            // 即使上传出错，也要使用生成的文件名
+            stockInDocument = fileNames.join(', ');
+          }
+        }
       }
 
-      const stockInTime = values.stock_in_time ? values.stock_in_time.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const stockInTime = values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss');
       const stockInNumber = values.stock_in_number || '';
 
       const newItem = {
@@ -838,10 +999,11 @@ const StockInPage: React.FC = () => {
         quantity: values.quantity || 1,
         contract_number: values.contract_number || '',
         stock_in_number: stockInNumber,
-        stock_in_time: stockInTime,
+        // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+        stock_in_date: stockInTime,
         supplier: values.supplier || '',
         remark: values.remark || '',
-        receipt_documents: receiptDocuments,
+        receipt_documents: batchReceiptDocuments,
         status: 'pending' as 'pending'
       };
 
@@ -917,12 +1079,12 @@ const StockInPage: React.FC = () => {
             factory_order: currentValues.factory_order,
             contract_number: currentValues.contract_number,
             remark: currentValues.remark,
-            stock_in_time: dayjs()
+            stock_in_date: dayjs()
           };
           
           batchForm.resetFields();
           
-          const newStockInNumber = generateAndIncrementStockInNumber();
+          const newStockInNumber = await generateAndIncrementStockInNumber();
           setCurrentStockInNumber(newStockInNumber);
           
           batchForm.setFieldsValue({
@@ -962,7 +1124,7 @@ const StockInPage: React.FC = () => {
           switch (field.name[0]) {
             case 'product_name':
               return '产品名称不能为空';
-            case 'stock_in_time':
+            case 'stock_in_date':
               return '入库时间不能为空';
             case 'quantity':
               return '数量不能为空';
@@ -1046,8 +1208,8 @@ const StockInPage: React.FC = () => {
     },
     {
       title: '入库时间',
-      dataIndex: 'stock_in_time',
-      key: 'stock_in_time',
+      dataIndex: 'stock_in_date',
+      key: 'stock_in_date',
       width: 150,
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
@@ -1276,7 +1438,8 @@ const StockInPage: React.FC = () => {
           quantity: 1,
           contract_number: 'CONTRACT001',
           stock_in_number: 'SI202509180001',
-          stock_in_time: '2025-09-18 10:00:00',
+          // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+          stock_in_date: '2025-09-18 10:00:00',
           supplier: '供应商A',
           remark: '备注A',
           receipt_documents: [],
@@ -1293,7 +1456,8 @@ const StockInPage: React.FC = () => {
           quantity: 2,
           contract_number: 'CONTRACT002',
           stock_in_number: 'SI202509180002',
-          stock_in_time: '2025-09-18 11:00:00',
+          // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+          stock_in_date: '2025-09-18 11:00:00',
           supplier: '供应商B',
           remark: '备注B',
           receipt_documents: [],
@@ -1323,19 +1487,21 @@ const StockInPage: React.FC = () => {
   const handleEditItem = (item: StockInItem) => {
     setUpdatingItem(item);
     setIsUpdateModalVisible(true);
+    // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
     updateForm.setFieldsValue({
       ...item,
-      stock_in_time: item.stock_in_time ? dayjs(item.stock_in_time) : null
+      stock_in_date: item.stock_in_date ? dayjs(item.stock_in_date) : null
     });
   };
 
   const handleSaveUpdate = () => {
     updateForm.validateFields().then(values => {
       if (updatingItem) {
+        // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
         const updatedItem: StockInItem = {
           ...updatingItem,
           ...values,
-          stock_in_time: values.stock_in_time ? values.stock_in_time.format('YYYY-MM-DD HH:mm:ss') : ''
+          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : ''
         };
         
         setSearchResults(prev => 
@@ -1374,19 +1540,21 @@ const StockInPage: React.FC = () => {
   const handleEditBatchItem = (item: StockInItem) => {
     setEditingItem(item);
     setIsEditModalVisible(true);
+    // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
     editForm.setFieldsValue({
       ...item,
-      stock_in_time: item.stock_in_time ? dayjs(item.stock_in_time) : null
+      stock_in_date: item.stock_in_date ? dayjs(item.stock_in_date) : null
     });
   };
 
   const handleSaveEditBatchItem = () => {
     editForm.validateFields().then(values => {
       if (editingItem) {
+        // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
         const updatedItem: StockInItem = {
           ...editingItem,
           ...values,
-          stock_in_time: values.stock_in_time ? values.stock_in_time.format('YYYY-MM-DD HH:mm:ss') : ''
+          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : ''
         };
         
         setBatchItems(prev => 
@@ -1458,8 +1626,8 @@ const StockInPage: React.FC = () => {
     },
     {
       title: '入库时间',
-      dataIndex: 'stock_in_time',
-      key: 'stock_in_time',
+      dataIndex: 'stock_in_date',
+      key: 'stock_in_date',
       width: 150,
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
@@ -1664,7 +1832,7 @@ const StockInPage: React.FC = () => {
                 <Col span={6}>
                   <Form.Item
                     label="入库时间"
-                    name="stock_in_time"
+                    name="stock_in_date"
                     rules={[{ required: true, message: '请选择入库时间' }]}
                     initialValue={dayjs()}
                   >
@@ -1868,7 +2036,7 @@ const StockInPage: React.FC = () => {
                   <Col span={6}>
                     <Form.Item
                       label="入库时间"
-                      name="stock_in_time"
+                      name="stock_in_date"
                       rules={[{ required: true, message: '请选择入库时间' }]}
                       initialValue={dayjs()}
                     >
@@ -2423,7 +2591,7 @@ const StockInPage: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 label="入库时间"
-                name="stock_in_time"
+                name="stock_in_date"
                 rules={[{ required: true, message: '请选择入库时间' }]}
               >
                 <DatePicker 
@@ -2608,7 +2776,7 @@ const StockInPage: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 label="入库时间"
-                name="stock_in_time"
+                name="stock_in_date"
                 rules={[{ required: true, message: '请选择入库时间' }]}
               >
                 <DatePicker 

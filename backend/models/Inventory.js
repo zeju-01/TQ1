@@ -1,5 +1,5 @@
 // 库存数据模型
-const { executeQuery, executeTransaction, generateStockInNumber, generateStockOutNumber } = require('../config/database');
+const { executeQuery, executeTransaction } = require('../config/database');
 
 class InventoryModel {
   // 创建入库记录
@@ -12,43 +12,78 @@ class InventoryModel {
         stock_in_by, stock_in_notes, stock_in_number  // 添加入库单号字段
       } = stockInData;
 
-      // 检查IMEI是否已存在
-      const existingItem = await this.findByIMEI(imei);
-      if (existingItem) {
-        throw new Error('IMEI号已存在');
+      // 检查IMEI是否已存在（仅当IMEI不为空时）
+      if (imei) {
+        const existingItem = await this.findByIMEI(imei);
+        if (existingItem) {
+          throw new Error('IMEI号已存在');
+        }
       }
 
-      // 生成入库自动编号
-      const stock_in_auto_number = await generateStockInNumber();
+      // 处理入库日期，确保格式正确
+      let formatted_stock_in_date = stock_in_date;
+      if (stock_in_date) {
+        // 尝试解析日期，如果失败则使用当前时间
+        try {
+          const date = new Date(stock_in_date);
+          if (isNaN(date.getTime())) {
+            formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+          } else {
+            // 确保日期格式正确
+            formatted_stock_in_date = date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+          }
+        } catch (dateError) {
+          formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        }
+      } else {
+        formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      }
+
+      // 获取当前北京时间用于 stock_in_time 字段
+      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+
+      // 注意：根据用户要求，以下字段在入库时不应填充数据：
+      // return_time, after_sales_time, stock_out_date, stock_out_time, updated_at
+      // 这些字段将保持为NULL，直到相应的操作发生时才填充
 
       const query = `
         INSERT INTO inventory (
           product_id, product_name, product_model, product_description, operator,
           imei, batch_number, stock_in_quantity, stock_in_status, return_status,
-          after_sales_status, other_status, stock_in_auto_number, supplier,
+          after_sales_status, other_status, supplier,
           factory_name, factory_order, stock_in_date, stock_in_contract_number,
           stock_in_document, stock_in_by, stock_in_notes, quantity, transaction_type,
-          stock_in_number  // 添加入库单号字段
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          stock_in_number, stock_in_auto_number, stock_in_time, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const params = [
         product_id, product_name, product_model, product_description, operator,
         imei, batch_number, stock_in_quantity, '已入库', '正常',
-        '正常', '正常', stock_in_auto_number, supplier,
-        factory_name, factory_order, stock_in_date || new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }), stock_in_contract_number,
+        '正常', '正常', supplier,
+        factory_name, factory_order, formatted_stock_in_date, stock_in_contract_number,
         stock_in_document, stock_in_by, stock_in_notes, stock_in_quantity, 'in',
-        stock_in_number || null  // 添加入库单号参数
+        stock_in_number || null,
+        // 添加 stock_in_auto_number 字段，显式设置为 NULL
+        null,
+        // 添加 stock_in_time 字段，使用当前北京时间
+        beijingTime,
+        // 添加created_at字段，使用当前时间
+        beijingTime
       ];
+
+      console.log('执行入库SQL:', query);
+      console.log('SQL参数:', params);
 
       const result = await executeQuery(query, params);
       
       if (result.success) {
-        return await this.findById(result.data.insertId);
+        return await this.findById(result.data.lastID || result.data.insertId);
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || '入库操作失败');
       }
     } catch (error) {
+      console.error('入库操作异常:', error);
       throw error;
     }
   }
@@ -107,23 +142,26 @@ class InventoryModel {
       }
 
       // 生成出库自动编号
-      const stock_out_number = await generateStockOutNumber();
+      const stock_out_number = 'OUT' + new Date().toISOString().replace(/-/g, '').slice(0, 8) + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
 
+      // 获取北京时间
+      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      
       const query = `
         UPDATE inventory SET
-          stock_out_number = ?, stock_out_date = CURRENT_TIMESTAMP, stock_out_quantity = ?,
+          stock_out_number = ?, stock_out_date = ?, stock_out_quantity = ?,
           stock_out_contract_number = ?, sales_order_number = ?, recipient = ?,
           delivery_info = ?, courier_company = ?, tracking_number = ?,
-          stock_out_time = CURRENT_TIMESTAMP, stock_out_by = ?, stock_out_notes = ?,
+          stock_out_time = ?, stock_out_by = ?, stock_out_notes = ?,
           stock_out_status = '已出库', customer = ?, transaction_type = 'out',
-          updated_at = CURRENT_TIMESTAMP
+          updated_at = ?
         WHERE imei = ?
       `;
 
       const params = [
-        stock_out_number, stock_out_quantity, stock_out_contract_number,
+        stock_out_number, beijingTime, stock_out_quantity, stock_out_contract_number,
         sales_order_number, recipient, delivery_info, courier_company,
-        tracking_number, stock_out_by, stock_out_notes, customer, imei
+        tracking_number, beijingTime, stock_out_by, stock_out_notes, customer, beijingTime, imei
       ];
 
       const result = await executeQuery(query, params);
@@ -155,15 +193,18 @@ class InventoryModel {
         throw new Error('该设备已退库');
       }
 
+      // 获取北京时间
+      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      
       const query = `
         UPDATE inventory SET
-          return_status = '已退库', return_time = CURRENT_TIMESTAMP,
+          return_status = '已退库', return_time = ?,
           returned_by = ?, return_reason = ?, return_type = ?, return_notes = ?,
-          transaction_type = 'return', updated_at = CURRENT_TIMESTAMP
+          transaction_type = 'return', updated_at = ?
         WHERE imei = ?
       `;
 
-      const params = [returned_by, return_reason, return_type, return_notes, imei];
+      const params = [beijingTime, returned_by, return_reason, return_type, return_notes, beijingTime, imei];
       const result = await executeQuery(query, params);
       
       if (result.success && result.data.affectedRows > 0) {
@@ -205,7 +246,47 @@ class InventoryModel {
       throw error;
     }
   }
-
+  
+  // 获取最大的入库单号
+  static async getMaxStockInNumber() {
+    try {
+      // 获取当天日期
+      const today = new Date().toLocaleDateString('zh-CN', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit',
+        timeZone: 'Asia/Shanghai'
+      }).replace(/\//g, '');
+      
+      // 查询当天最大的入库单号
+      const query = `
+        SELECT stock_in_number 
+        FROM inventory 
+        WHERE stock_in_number LIKE 'SI${today}%' 
+        ORDER BY stock_in_number DESC 
+        LIMIT 1
+      `;
+      
+      const result = await executeQuery(query);
+      
+      if (result.success && result.data.length > 0) {
+        const maxNumber = result.data[0].stock_in_number;
+        // 提取序号部分并加1
+        const prefix = `SI${today}`;
+        const currentSeq = parseInt(maxNumber.replace(prefix, '')) || 0;
+        const nextSeq = currentSeq + 1;
+        const nextSeqStr = String(nextSeq).padStart(4, '0');
+        return `${prefix}${nextSeqStr}`;
+      } else {
+        // 如果没有找到当天的入库单号，则从0001开始
+        return `SI${today}0001`;
+      }
+    } catch (error) {
+      console.error('获取最大入库单号错误:', error);
+      throw error;
+    }
+  }
+  
   // 获取库存列表（分页）
   static async findAll(page = 1, limit = 20, filters = {}) {
     try {
@@ -385,8 +466,10 @@ class InventoryModel {
         throw new Error('没有要更新的字段');
       }
 
-      setClause.push('updated_at = CURRENT_TIMESTAMP');
-      params.push(id);
+      // 获取北京时间
+      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      setClause.push('updated_at = ?');
+      params.push(beijingTime, id);
 
       const query = `UPDATE inventory SET ${setClause.join(', ')} WHERE id = ?`;
       const result = await executeQuery(query, params);

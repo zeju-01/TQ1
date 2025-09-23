@@ -113,7 +113,6 @@ INSERT INTO `inventory` (
 (4, '2G GSM模组', 'M26', '成熟稳定的2G GSM通信模组', '中国移动', '867894050004001', 'BOX202509004', 1, '已入库', '已退库', '正常', '正常', 'IN20250914011', '移远通信', '深圳工厂', 'WO2025004', '2025-09-05 16:00:00', 'CT2025004', '入库单据004.pdf', 'operator1', '2025-09-12 09:30:00', 3, '产品质量问题', '质量退库', '模组存在功能缺陷，需要退回供应商处理', 'M26模组入库后发现质量问题', 1, 'return');
 
 -- 更新序列计数器以反映当前使用情况
-UPDATE `sequence_counters` SET `current_value` = 20 WHERE `name` = 'stock_in_auto_number';
 UPDATE `sequence_counters` SET `current_value` = 10 WHERE `name` = 'stock_out_auto_number';
 
 -- 验证数据插入
