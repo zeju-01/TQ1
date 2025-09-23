@@ -52,7 +52,7 @@ const { Dragger } = Upload;
 interface StockInItem {
   id: number;
   imei: string;
-  product_name: string;
+  product_name: string | number;
   product_model: string;
   operator: string;
   box_number: string;
@@ -2314,9 +2314,11 @@ const StockInPage: React.FC = () => {
                 <Form.Item>
                   
                   <Button 
-                    type="dashed" 
+                    type="primary" 
+                    size="large"
                     onClick={handleAddBatchItem}
                     icon={<PlusOutlined />}
+                    style={{ fontSize: '14px' }}
                   >
                     添加入库项目
                   </Button>
@@ -2455,6 +2457,7 @@ const StockInPage: React.FC = () => {
                     pageSizeOptions: ['10', '20', '50', '100']
                   }}
                   rowKey="id"
+                  scroll={{ x: 1200 }}
                 />
               </div>
 
@@ -2597,19 +2600,53 @@ const StockInPage: React.FC = () => {
                     {Array.from(
                       new Set(
                         searchResults.map(
-                          item => `${item.product_name || '未指定产品'}-${item.operator || '未指定运营商'}`
+                          item => {
+                            // 处理产品名称，如果是数字ID则转换为产品名称
+                            let productName: string = '';
+                            if (typeof item.product_name === 'number') {
+                              const product = products.find(p => p.id === item.product_name);
+                              productName = (product && product.name) ? product.name : `产品ID: ${item.product_name}`;
+                            } else if (typeof item.product_name === 'string' && !isNaN(Number(item.product_name))) {
+                              // 如果是数字字符串，也尝试查找产品
+                              const productId = parseInt(item.product_name, 10);
+                              const product = products.find(p => p.id === productId);
+                              productName = (product && product.name) ? product.name : item.product_name;
+                            } else {
+                              productName = item.product_name as string;
+                            }
+                            return `${productName || '未指定产品'}-${item.operator || '未指定运营商'}`;
+                          }
                         )
                       )
                     ).map(key => {
                       const [productName, operator] = key.split('-');
-                      const items = searchResults.filter(
-                        item => (item.product_name || '未指定产品') === productName && 
-                               (item.operator || '未指定运营商') === operator
-                      );
-                      const totalCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                      // 计算该产品和运营商组合的总入库数量
+                      const totalQuantity = searchResults.reduce((sum, item) => {
+                        // 处理产品名称，如果是数字ID则转换为产品名称
+                        let itemProductName: string = '';
+                        if (typeof item.product_name === 'number') {
+                          const product = products.find(p => p.id === item.product_name);
+                          itemProductName = (product && product.name) ? product.name : `产品ID: ${item.product_name}`;
+                        } else if (typeof item.product_name === 'string' && !isNaN(Number(item.product_name))) {
+                          // 如果是数字字符串，也尝试查找产品
+                          const productId = parseInt(item.product_name, 10);
+                          const product = products.find(p => p.id === productId);
+                          itemProductName = (product && product.name) ? product.name : item.product_name;
+                        } else {
+                          itemProductName = item.product_name as string;
+                        }
+                        
+                        // 如果产品名称和运营商匹配，则累加入库数量
+                        if ((itemProductName || '未指定产品') === productName && 
+                            (item.operator || '未指定运营商') === operator) {
+                          return sum + (item.quantity || 0);
+                        }
+                        return sum;
+                      }, 0);
+                      
                       return (
                         <Tag key={key} color="blue">
-                          {productName}({operator}): {totalCount}
+                          {productName}({operator}): {totalQuantity}
                         </Tag>
                       );
                     })}
