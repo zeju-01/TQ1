@@ -104,7 +104,9 @@ const StockInPage: React.FC = () => {
   const [updatingItem, setUpdatingItem] = useState<StockInItem | null>(null);
   const [updateForm] = Form.useForm();
   
-  // 收货单据文件列表状态
+  // 为每个页面创建独立的收货单据文件列表状态
+  const [singleReceiptFileList, setSingleReceiptFileList] = useState<any[]>([]);
+  const [batchReceiptFileList, setBatchReceiptFileList] = useState<any[]>([]);
   const [receiptFileList, setReceiptFileList] = useState<any[]>([]);
   
   // 入库更新页面：搜索条件表单状态
@@ -519,9 +521,35 @@ const StockInPage: React.FC = () => {
     },
     onChange(info: any) {
       console.log('收货单据上传:', info.fileList);
-      setReceiptFileList(info.fileList);
     },
-    fileList: receiptFileList
+    // 修正onPreview函数实现
+    onPreview: async (file: any) => {
+      // 如果文件已经有预览URL，直接打开
+      if (file.url) {
+        window.open(file.url);
+        return;
+      }
+      
+      // 如果是图片类型且有originFileObj，创建临时URL预览
+      if (file.originFileObj && file.type && file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file.originFileObj);
+        window.open(url);
+        // 在新窗口加载后释放URL对象
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 1000);
+        return;
+      }
+      
+      // 对于其他文件类型，如果有thumbUrl则打开缩略图
+      if (file.thumbUrl) {
+        window.open(file.thumbUrl);
+        return;
+      }
+      
+      // 如果以上都不满足，显示提示信息
+      message.info('该文件不支持预览');
+    }
   };
 
   // Excel导入相关函数
@@ -936,7 +964,7 @@ const StockInPage: React.FC = () => {
         singleForm.resetFields(['imei', 'stock_in_date', 'quantity', 'receipt_documents']);
         
         // 清空收货单据文件列表状态
-        setReceiptFileList([]);
+        setSingleReceiptFileList([]);
         
         singleForm.setFieldsValue({
           ...preservedValues,
@@ -1249,7 +1277,7 @@ const StockInPage: React.FC = () => {
           message.success(`批量入库完成！成功 ${successCount} 条`);
           setBatchItems([]);
           // 清空收货单据文件列表状态
-          setReceiptFileList([]);
+          setBatchReceiptFileList([]);
           
           const currentValues = batchForm.getFieldsValue();
           const preservedValues = {
@@ -1878,7 +1906,7 @@ const StockInPage: React.FC = () => {
             const file = receiptDocuments[i];
             if (file && file.originFileObj) {
               const fileExtension = file.name.split('.').pop();
-              const newFileName = `${stockInNumber}_${Date.now()}_${i + 1}.${fileExtension}`;
+              const newFileName = `${stockInNumber}_${i + 1}.${fileExtension}`;
               fileNames.push(newFileName);
               customFileNames.push(newFileName);
               
@@ -2517,10 +2545,10 @@ const StockInPage: React.FC = () => {
                     <Upload 
                       {...receiptUploadProps} 
                       listType="picture-card"
-                      fileList={receiptFileList}
+                      fileList={singleReceiptFileList}
                       onChange={(info) => {
                         console.log('收货单据上传:', info.fileList);
-                        setReceiptFileList(info.fileList);
+                        setSingleReceiptFileList(info.fileList);
                         // 同时更新表单字段的值
                         singleForm.setFieldsValue({
                           receipt_documents: info.fileList
@@ -2736,10 +2764,10 @@ const StockInPage: React.FC = () => {
                           <Upload 
                             {...receiptUploadProps} 
                             listType="picture-card"
-                            fileList={receiptFileList}
+                            fileList={batchReceiptFileList}
                             onChange={(info) => {
                               console.log('收货单据上传:', info.fileList);
-                              setReceiptFileList(info.fileList);
+                              setBatchReceiptFileList(info.fileList);
                               // 同时更新表单字段的值
                               batchForm.setFieldsValue({
                                 receipt_documents: info.fileList
