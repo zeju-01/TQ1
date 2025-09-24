@@ -116,6 +116,17 @@ const StockInPage: React.FC = () => {
   const debounceTimers = useRef<Record<string, NodeJS.Timeout | null>>({});
   const searchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // 添加一个useEffect来确保表单初始值正确设置
+  useEffect(() => {
+    // 设置搜索表单的初始值
+    searchForm.setFieldsValue({
+      filterType: 'contract_number',
+      searchContent: '',
+      stock_in_number: '',
+      replaceContent: ''
+    });
+  }, []);
+
   // 防抖函数
   const debounce = (func: Function, wait: number, timerId: string) => {
     return function executedFunction(...args: any[]) {
@@ -425,9 +436,38 @@ const StockInPage: React.FC = () => {
       // 当切换到入库更新标签页时，自动触发一次搜索
       // 即使搜索内容为空，也要搜索数据库中对应字段为空值的入库单号
       console.log('切换到入库更新标签页，自动触发搜索');
-      debouncedSearch(filterType, searchValue, 0);
+      console.log('当前筛选条件:', filterType);
+      console.log('当前搜索内容:', searchValue);
+      
+      // 获取表单中的实际值
+      const formValues = searchForm.getFieldsValue();
+      const actualFilterType = formValues.filterType || filterType;
+      const actualSearchValue = formValues.searchContent || searchValue;
+      
+      console.log('实际筛选条件:', actualFilterType);
+      console.log('实际搜索内容:', actualSearchValue);
+      
+      // 触发搜索，即使条件为空也要搜索空值记录
+      debouncedSearch(actualFilterType, actualSearchValue, 0);
     }
   }, [activeTab]);
+
+  // 添加一个useEffect来处理stockInNumbers变化时的自动选择
+  useEffect(() => {
+    // 如果当前没有选中的入库单号，但有可用的入库单号，则自动选择第一个
+    if (!selectedStockInNumber && stockInNumbers.length > 0) {
+      console.log('自动选择第一个入库单号:', stockInNumbers[0]);
+      setSelectedStockInNumber(stockInNumbers[0]);
+      
+      // 同步更新表单字段
+      searchForm.setFieldsValue({
+        stock_in_number: stockInNumbers[0]
+      });
+      
+      // 自动加载第一个入库单号的记录
+      handleStockInNumberChange(stockInNumbers[0]);
+    }
+  }, [stockInNumbers]);
 
   const uploadProps = {
     name: 'file',
@@ -1642,6 +1682,11 @@ const StockInPage: React.FC = () => {
         // 如果有匹配的入库单号，自动选择第一个
         if (numbers.length > 0) {
           setSelectedStockInNumber(numbers[0]);
+          
+          // 同步更新表单字段
+          searchForm.setFieldsValue({
+            stock_in_number: numbers[0]
+          });
           
           // 自动加载第一个入库单号的记录
           const records = await getStockInRecordsByNumber(numbers[0]);
