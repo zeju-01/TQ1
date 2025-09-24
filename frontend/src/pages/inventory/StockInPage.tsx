@@ -1574,6 +1574,11 @@ const StockInPage: React.FC = () => {
           setSelectedStockInNumber(numbers[0]);
           console.log('设置selectedStockInNumber后的值:', numbers[0]);
           
+          // 同步更新表单字段
+          searchForm.setFieldsValue({
+            stock_in_number: numbers[0]
+          });
+          
           // 自动加载第一个入库单号的记录
           const records = await getStockInRecordsByNumber(numbers[0]);
           console.log('搜索到的记录:', records);
@@ -1598,6 +1603,10 @@ const StockInPage: React.FC = () => {
           setSearchResults(convertedRecords);
         } else {
           setSearchResults([]);
+          // 如果没有结果，也要清空表单中的入库单号
+          searchForm.setFieldsValue({
+            stock_in_number: ''
+          });
         }
       } catch (error: any) {
         console.error('搜索失败:', error);
@@ -1675,6 +1684,11 @@ const StockInPage: React.FC = () => {
   // 当选中的入库单号改变时，加载对应的记录
   const handleStockInNumberChange = async (value: string) => {
     setSelectedStockInNumber(value);
+    
+    // 同步更新表单字段
+    searchForm.setFieldsValue({
+      stock_in_number: value
+    });
     
     if (value) {
       try {
