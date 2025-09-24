@@ -1858,7 +1858,8 @@ const StockInPage: React.FC = () => {
         setLoading(false);
       }
     } else {
-      setSearchResults([]);
+      // 如果没有原始搜索结果，重新执行搜索以获取最新数据
+      handleSearch();
     }
     
     // 恢复筛选条件、搜索内容和更新内容
@@ -1882,9 +1883,6 @@ const StockInPage: React.FC = () => {
     
     // 获取当前的筛选条件
     const currentFilterType = formValues.filterType || filterType;
-    
-    // 保存原始搜索结果用于可能的重置操作
-    setOriginalSearchResults([...searchResults]);
     
     // 根据筛选条件确定要更新的字段
     let updateField = '';
@@ -1912,6 +1910,9 @@ const StockInPage: React.FC = () => {
     try {
       setLoading(true);
       
+      // 保存原始搜索结果用于可能的重置操作（在更新之前保存）
+      setOriginalSearchResults([...searchResults]);
+      
       // 准备要更新的数据
       const updates = searchResults.map(item => ({
         id: item.id,
@@ -1936,24 +1937,17 @@ const StockInPage: React.FC = () => {
         
         setSearchResults(updatedResults);
         
-        // 同时更新原始搜索结果，确保重置功能正常工作
-        const updatedOriginalResults = originalSearchResults.map(item => ({
-          ...item,
-          [currentFilterType === 'contract_number' ? 'contract_number' : 
-           currentFilterType === 'supplier' ? 'supplier' : 
-           currentFilterType === 'factory_order' ? 'factory_order' : 
-           currentFilterType === 'box_number' ? 'box_number' :
-           'stock_in_document']: updateContent
-        }));
-        setOriginalSearchResults(updatedOriginalResults);
-        
         message.success(`成功更新 ${updates.length} 条记录`);
       } else {
+        // 如果更新失败，清空原始搜索结果
+        setOriginalSearchResults([]);
         throw new Error(response.message);
       }
     } catch (error: any) {
       console.error('更新失败:', error);
       message.error('更新失败: ' + (error.message || '未知错误'));
+      // 如果更新失败，清空原始搜索结果
+      setOriginalSearchResults([]);
     } finally {
       setLoading(false);
     }
