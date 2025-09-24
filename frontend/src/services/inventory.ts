@@ -300,3 +300,23 @@ export const getStockInRecordsByNumber = async (stockInNumber: string): Promise<
     throw new Error(error.response?.data?.message || '获取入库记录失败');
   }
 };
+
+// 批量更新库存记录
+export const batchUpdateInventory = async (updates: { id: number; data: Partial<Inventory> }[]): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await api.post('/inventory/batch-update', updates);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || '批量更新库存失败');
+  }
+};
+
+// 批量恢复库存记录
+export const batchRestoreInventory = async (restores: { id: number; data: Partial<Inventory> }[]): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await api.post('/inventory/batch-restore', restores);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || '批量恢复库存失败');
+  }
+};

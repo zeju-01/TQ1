@@ -532,6 +532,16 @@ class InventoryModel {
             params = [`%${searchValue}%`];
           }
           break;
+        case 'receipt_documents':
+          if (searchValue === '') {
+            // 搜索空值的情况
+            query = 'SELECT DISTINCT stock_in_number FROM inventory WHERE (stock_in_document IS NULL OR stock_in_document = "") AND stock_in_number IS NOT NULL AND stock_in_number != ""';
+          } else {
+            // 搜索包含指定内容的情况
+            query = 'SELECT DISTINCT stock_in_number FROM inventory WHERE stock_in_document LIKE ? AND stock_in_number IS NOT NULL AND stock_in_number != ""';
+            params = [`%${searchValue}%`];
+          }
+          break;
         default:
           throw new Error('无效的筛选条件');
       }

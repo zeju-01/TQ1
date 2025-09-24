@@ -322,7 +322,7 @@ class InventoryController {
       const { stockInNumber } = req.query;
       
       if (!stockInNumber) {
-        return res.status(400).json(errorResponse('入库单号不能为空', 'INVALID_STOCK_IN_NUMBER'));
+        return res.status(400).json(errorResponse('入库单号不能为空', 'MISSING_STOCK_IN_NUMBER'));
       }
       
       const records = await InventoryModel.getStockInRecordsByNumber(stockInNumber);
@@ -330,6 +330,126 @@ class InventoryController {
     } catch (error) {
       console.error('获取入库记录错误:', error);
       res.status(500).json(errorResponse('获取入库记录失败', 'GET_STOCK_IN_RECORDS_FAILED'));
+    }
+  }
+  
+  // 批量更新库存记录
+  static async batchUpdate(req, res) {
+    try {
+      const updates = req.body;
+      
+      if (!Array.isArray(updates) || updates.length === 0) {
+        return res.status(400).json(errorResponse('更新数据不能为空', 'EMPTY_UPDATES'));
+      }
+      
+      // 验证每个更新项
+      for (const update of updates) {
+        if (!update.id || !update.data) {
+          return res.status(400).json(errorResponse('每个更新项必须包含id和data字段', 'INVALID_UPDATE_FORMAT'));
+        }
+      }
+      
+      // 执行批量更新
+      const results = [];
+      const errors = [];
+      
+      for (const update of updates) {
+        try {
+          // 获取当前记录以确保我们有最新的数据
+          const currentRecord = await InventoryModel.findById(update.id);
+          if (!currentRecord) {
+            errors.push({
+              id: update.id,
+              error: '记录不存在'
+            });
+            continue;
+          }
+          
+          // 执行更新，自动设置updated_at为当前北京时间
+          const updatedRecord = await InventoryModel.updateById(update.id, update.data);
+          results.push({
+            id: update.id,
+            success: true,
+            data: updatedRecord
+          });
+        } catch (error) {
+          errors.push({
+            id: update.id,
+            error: error.message
+          });
+        }
+      }
+      
+      res.json(successResponse('批量更新完成', {
+        total: updates.length,
+        success: results.length,
+        failed: errors.length,
+        results,
+        errors
+      }));
+    } catch (error) {
+      console.error('批量更新错误:', error);
+      res.status(500).json(errorResponse('批量更新失败', 'BATCH_UPDATE_FAILED'));
+    }
+  }
+  
+  // 批量恢复库存记录
+  static async batchRestore(req, res) {
+    try {
+      const restores = req.body;
+      
+      if (!Array.isArray(restores) || restores.length === 0) {
+        return res.status(400).json(errorResponse('恢复数据不能为空', 'EMPTY_RESTORES'));
+      }
+      
+      // 验证每个恢复项
+      for (const restore of restores) {
+        if (!restore.id || !restore.data) {
+          return res.status(400).json(errorResponse('每个恢复项必须包含id和data字段', 'INVALID_RESTORE_FORMAT'));
+        }
+      }
+      
+      // 执行批量恢复
+      const results = [];
+      const errors = [];
+      
+      for (const restore of restores) {
+        try {
+          // 获取当前记录以确保我们有最新的数据
+          const currentRecord = await InventoryModel.findById(restore.id);
+          if (!currentRecord) {
+            errors.push({
+              id: restore.id,
+              error: '记录不存在'
+            });
+            continue;
+          }
+          
+          // 执行恢复，自动设置updated_at为当前北京时间
+          const restoredRecord = await InventoryModel.updateById(restore.id, restore.data);
+          results.push({
+            id: restore.id,
+            success: true,
+            data: restoredRecord
+          });
+        } catch (error) {
+          errors.push({
+            id: restore.id,
+            error: error.message
+          });
+        }
+      }
+      
+      res.json(successResponse('批量恢复完成', {
+        total: restores.length,
+        success: results.length,
+        failed: errors.length,
+        results,
+        errors
+      }));
+    } catch (error) {
+      console.error('批量恢复错误:', error);
+      res.status(500).json(errorResponse('批量恢复失败', 'BATCH_RESTORE_FAILED'));
     }
   }
 }

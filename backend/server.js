@@ -16,7 +16,7 @@ const { testConnection } = require('./config/database');
 
 // 创建Express应用
 const app = express();
-const PORT = process.env.PORT || 5001; // 更改端口号为5002，避免端口冲突
+const PORT = process.env.PORT || 3000; // 更改端口号为5002，避免端口冲突
 const HOST = process.env.HOST || 'localhost';
 
 // 安全中间件
@@ -26,7 +26,7 @@ app.use(helmet({
 
 // CORS配置
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

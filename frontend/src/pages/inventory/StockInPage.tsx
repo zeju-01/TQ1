@@ -38,11 +38,12 @@ import * as XLSX from 'xlsx';
 import { productService } from '../../services/products';
 import { operatorService } from '../../services/operators';
 import { supplierService } from '../../services/suppliers';
-import { stockIn, batchStockIn, getMaxStockInNumber, checkIMEI } from '../../services/inventory';
-import { searchStockInNumbers, getStockInRecordsByNumber } from '../../services/inventory';
+import { stockIn, batchStockIn, getMaxStockInNumber, checkIMEI, searchStockInNumbers, getStockInRecordsByNumber, batchUpdateInventory, batchRestoreInventory } from '../../services/inventory';
+
 import type { Product } from '../../types';
 import type { Operator } from '../../services/operators';
 import type { Supplier } from '../../types';
+import type { Inventory } from '../../types';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -112,6 +113,7 @@ const StockInPage: React.FC = () => {
   const [stockInNumbers, setStockInNumbers] = useState<string[]>([]);
   const [selectedStockInNumber, setSelectedStockInNumber] = useState<string>('');
   const [replaceValue, setReplaceValue] = useState<string>('');
+  const [originalSearchResults, setOriginalSearchResults] = useState<StockInItem[]>([]); // 保存原始搜索结果用于重置
   
   const debounceTimers = useRef<Record<string, NodeJS.Timeout | null>>({});
   const searchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -1770,13 +1772,191 @@ const StockInPage: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    searchForm.resetFields();
-    setSearchResults([]);
+  const handleReset = async () => {
+    // 保存当前的筛选条件，避免重置后丢失
+    const currentFilterType = filterType;
+    
+    // 获取当前表单值
+    const formValues = searchForm.getFieldsValue();
+    const searchContent = formValues.searchContent || searchValue;
+    const replaceContent = formValues.replaceContent || replaceValue;
+    
+    // 如果有保存的原始搜索结果，则恢复到更新前的状态
+    if (originalSearchResults.length > 0) {
+      try {
+        setLoading(true);
+        
+        // 准备要恢复的数据
+        const restoreData = originalSearchResults.map(item => {
+          // 根据当前筛选条件确定要恢复的字段
+          let restoreField = '';
+          switch (currentFilterType) {
+            case 'contract_number':
+              restoreField = 'stock_in_contract_number';
+              break;
+            case 'supplier':
+              restoreField = 'supplier';
+              break;
+            case 'factory_order':
+              restoreField = 'factory_order';
+              break;
+            case 'box_number':
+              restoreField = 'batch_number';
+              break;
+            case 'receipt_documents':
+              restoreField = 'stock_in_document';
+              break;
+            default:
+              return null;
+          }
+          
+          // 获取原始值
+          let originalValue = '';
+          switch (currentFilterType) {
+            case 'contract_number':
+              originalValue = item.contract_number || '';
+              break;
+            case 'supplier':
+              originalValue = item.supplier || '';
+              break;
+            case 'factory_order':
+              originalValue = item.factory_order || '';
+              break;
+            case 'box_number':
+              originalValue = item.box_number || '';
+              break;
+            case 'receipt_documents':
+              originalValue = item.stock_in_document || '';
+              break;
+          }
+          
+          return {
+            id: item.id,
+            data: {
+              [restoreField]: originalValue
+            }
+          };
+        }).filter(item => item !== null) as { id: number; data: Partial<Inventory> }[];
+        
+        // 调用后端API进行批量恢复
+        if (restoreData.length > 0) {
+          const response = await batchRestoreInventory(restoreData);
+          
+          if (!response.success) {
+            throw new Error(response.message);
+          }
+        }
+        
+        // 更新前端显示的数据
+        setSearchResults([...originalSearchResults]);
+        setOriginalSearchResults([]); // 清空原始结果缓存
+        message.success('已恢复到更新前的状态');
+      } catch (error: any) {
+        console.error('恢复数据失败:', error);
+        message.error('恢复数据失败: ' + (error.message || '未知错误'));
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setSearchResults([]);
+    }
+    
+    // 恢复筛选条件、搜索内容和更新内容
+    searchForm.setFieldsValue({
+      filterType: currentFilterType,
+      searchContent: searchContent,
+      replaceContent: replaceContent
+    });
   };
 
-  const handleConfirm = () => {
-    message.success('更新成功！');
+  const handleConfirm = async () => {
+    // 获取表单中的更新内容
+    const formValues = searchForm.getFieldsValue();
+    const updateContent = formValues.replaceContent;
+    
+    // 如果更新内容为空，则不执行更新操作
+    if (!updateContent || updateContent.trim() === '') {
+      message.warning('更新内容为空，不执行更新操作');
+      return;
+    }
+    
+    // 获取当前的筛选条件
+    const currentFilterType = formValues.filterType || filterType;
+    
+    // 保存原始搜索结果用于可能的重置操作
+    setOriginalSearchResults([...searchResults]);
+    
+    // 根据筛选条件确定要更新的字段
+    let updateField = '';
+    switch (currentFilterType) {
+      case 'contract_number':
+        updateField = 'stock_in_contract_number';
+        break;
+      case 'supplier':
+        updateField = 'supplier';
+        break;
+      case 'factory_order':
+        updateField = 'factory_order';
+        break;
+      case 'box_number':
+        updateField = 'batch_number';
+        break;
+      case 'receipt_documents':
+        updateField = 'stock_in_document';
+        break;
+      default:
+        message.warning('无效的筛选条件');
+        return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // 准备要更新的数据
+      const updates = searchResults.map(item => ({
+        id: item.id,
+        data: {
+          [updateField]: updateContent
+        }
+      }));
+      
+      // 调用后端API进行批量更新
+      const response = await batchUpdateInventory(updates);
+      
+      if (response.success) {
+        // 更新前端显示的数据
+        const updatedResults = searchResults.map(item => ({
+          ...item,
+          [currentFilterType === 'contract_number' ? 'contract_number' : 
+           currentFilterType === 'supplier' ? 'supplier' : 
+           currentFilterType === 'factory_order' ? 'factory_order' : 
+           currentFilterType === 'box_number' ? 'box_number' :
+           'stock_in_document']: updateContent
+        }));
+        
+        setSearchResults(updatedResults);
+        
+        // 同时更新原始搜索结果，确保重置功能正常工作
+        const updatedOriginalResults = originalSearchResults.map(item => ({
+          ...item,
+          [currentFilterType === 'contract_number' ? 'contract_number' : 
+           currentFilterType === 'supplier' ? 'supplier' : 
+           currentFilterType === 'factory_order' ? 'factory_order' : 
+           currentFilterType === 'box_number' ? 'box_number' :
+           'stock_in_document']: updateContent
+        }));
+        setOriginalSearchResults(updatedOriginalResults);
+        
+        message.success(`成功更新 ${updates.length} 条记录`);
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      console.error('更新失败:', error);
+      message.error('更新失败: ' + (error.message || '未知错误'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditItem = (item: StockInItem) => {
@@ -2679,6 +2859,7 @@ const StockInPage: React.FC = () => {
                         <Select.Option value="supplier">供应商</Select.Option>
                         <Select.Option value="factory_order">工厂工单</Select.Option>
                         <Select.Option value="box_number">箱号</Select.Option>
+                        <Select.Option value="receipt_documents">收货单据</Select.Option>
                       </Select>
                     </Form.Item>
                   </Col>
@@ -2734,11 +2915,11 @@ const StockInPage: React.FC = () => {
                   </Col>
                   <Col span={6}>
                     <Form.Item
-                      label="替换内容"
+                      label="更新内容"
                       name="replaceContent"
                     >
                       <Input 
-                        placeholder="请输入替换内容" 
+                        placeholder="请输入更新内容" 
                         value={replaceValue}
                         onChange={(e) => setReplaceValue(e.target.value)}
                       />

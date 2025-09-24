@@ -16,7 +16,9 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node start-services.js",
+    "dev": "node start-services.js"
   },
   "repository": {
     "type": "git",

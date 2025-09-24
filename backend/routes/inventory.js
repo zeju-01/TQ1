@@ -54,13 +54,6 @@ router.get('/batch/:batch_number',
   InventoryController.getByBatch
 );
 
-// 获取库存详情
-router.get('/:id', 
-  validateId,
-  handleValidationErrors,
-  InventoryController.getById
-);
-
 // 入库操作
 router.post('/stock-in', 
   authenticateToken,
@@ -112,6 +105,20 @@ router.post('/return',
   InventoryController.returnStock
 );
 
+// 批量更新库存信息
+router.post('/batch-update', 
+  authenticateToken,
+  requireOperator,
+  InventoryController.batchUpdate
+);
+
+// 批量恢复库存信息
+router.post('/batch-restore', 
+  authenticateToken,
+  requireOperator,
+  InventoryController.batchRestore
+);
+
 // 更新库存信息
 router.put('/:id', 
   authenticateToken,
@@ -119,6 +126,13 @@ router.put('/:id',
   validateId,
   handleValidationErrors,
   InventoryController.updateById
+);
+
+// 获取库存详情
+router.get('/:id', 
+  validateId,
+  handleValidationErrors,
+  InventoryController.getById
 );
 
 module.exports = router;

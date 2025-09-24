@@ -2,26 +2,25 @@ const axios = require('axios');
 
 async function testLogin() {
   try {
-    console.log('测试登录功能...');
-    
-    // 测试登录
-    const loginResponse = await axios.post('http://localhost:3000/api/auth/login', {
+    const response = await axios.post('http://localhost:5174/api/auth/login', {
       username: 'superadmin',
       password: 'admin123'
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
-    console.log('登录响应:', loginResponse.data);
-    
-    if (loginResponse.data.success) {
-      console.log('登录成功！');
-      console.log('访问令牌:', loginResponse.data.data.accessToken);
-      console.log('刷新令牌:', loginResponse.data.data.refreshToken);
-      console.log('用户信息:', loginResponse.data.data.user);
-    } else {
-      console.log('登录失败:', loginResponse.data.message);
-    }
+    console.log('登录成功:');
+    console.log(JSON.stringify(response.data, null, 2));
   } catch (error) {
-    console.error('登录请求失败:', error.response ? error.response.data : error.message);
+    console.error('登录失败:');
+    if (error.response) {
+      console.error('状态码:', error.response.status);
+      console.error('响应数据:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('错误信息:', error.message);
+    }
   }
 }
 

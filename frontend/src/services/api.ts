@@ -58,7 +58,8 @@ api.interceptors.response.use(
         case 404:
           // 对于删除操作，404可能是正常的业务逻辑，不显示错误
           if (!isDeleteOperation) {
-            message.error('请求的资源不存在');
+            // 更准确的错误信息
+            message.error(data.message || `请求的资源不存在: ${config.url}`);
           }
           break;
         case 400:
@@ -76,12 +77,12 @@ api.interceptors.response.use(
         case 500:
           // 对于删除操作，让业务逻辑处理具体的500错误
           if (!isDeleteOperation) {
-            message.error('服务器内部错误');
+            message.error(data.message || '服务器内部错误');
           }
           break;
         default:
           if (!isDeleteOperation) {
-            message.error(data.message || '请求失败');
+            message.error(data.message || `请求失败 (${status})`);
           }
       }
     } else {
