@@ -1436,54 +1436,13 @@ const StockInPage: React.FC = () => {
     },
     {
       title: '收货单据',
-      dataIndex: 'receipt_documents',
-      key: 'receipt_documents',
+      dataIndex: 'stock_in_document',
+      key: 'stock_in_document',
       width: 120,
-      render: (receipt_documents) => {
-        console.log('receipt_documents:', receipt_documents);
-        
-        if (receipt_documents && Array.isArray(receipt_documents) && receipt_documents.length > 0) {
-          const fileNames = receipt_documents.map((file: any, index: number) => {
-            try {
-              if (file && typeof file === 'object') {
-                if (file.name) return file.name;
-                if (file.fileName) return file.fileName;
-                if (file.uid) return file.uid;
-                if (file.url) {
-                  const fileName = file.url.split('/').pop();
-                  return fileName || file.url;
-                }
-                if (file.response && file.response.url) {
-                  const fileName = file.response.url.split('/').pop();
-                  return fileName || '已上传文件';
-                }
-                if (file.status === 'done' && file.url) {
-                  const fileName = file.url.split('/').pop();
-                  return fileName || '已上传文件';
-                }
-                if (file.originFileObj && file.originFileObj.name) {
-                  return file.originFileObj.name;
-                }
-                if (file.thumbUrl) {
-                  const fileName = file.thumbUrl.split('/').pop();
-                  return fileName || '缩略图文件';
-                }
-                return JSON.stringify(file).substring(0, 50) + '...';
-              }
-              if (typeof file === 'string') {
-                if (file.includes('/')) {
-                  const fileName = file.split('/').pop();
-                  return fileName || file;
-                }
-                return file;
-              }
-              return `文件${index + 1}`;
-            } catch (error) {
-              console.error('处理文件名时出错:', error);
-              return `文件${index + 1}`;
-            }
-          });
-          
+      render: (stock_in_document) => {
+        if (stock_in_document) {
+          // 如果是逗号分隔的多个文件名，显示所有文件名
+          const fileNames = stock_in_document.split(',').map((name: string) => name.trim());
           if (fileNames.length > 3) {
             return (
               <div style={{ fontSize: '14px' }}>
@@ -1493,7 +1452,6 @@ const StockInPage: React.FC = () => {
               </div>
             );
           }
-          
           return <div style={{ fontSize: '14px' }}>{fileNames.join(', ')}</div>;
         }
         return <span style={{ fontSize: '14px' }}>-</span>;
@@ -1876,14 +1834,148 @@ const StockInPage: React.FC = () => {
     const updateContent = formValues.replaceContent;
     const searchContent = formValues.searchContent;
     
+    // 获取当前的筛选条件
+    const currentFilterType = formValues.filterType || filterType;
+    
+    // 如果是收货单据筛选，特殊处理文件上传
+    if (currentFilterType === 'receipt_documents') {
+      // 检查是否有上传的文件
+      const receiptDocuments = formValues.receipt_documents || [];
+      if (receiptDocuments.length > 0) {
+        try {
+          setLoading(true);
+          
+          // 保存原始搜索结果用于可能的重置操作（在更新之前保存）
+          setOriginalSearchResults([...searchResults]);
+          
+          // 过滤出与搜索内容相同的记录进行更新
+          let filteredResults = [...searchResults];
+          if (searchContent && searchContent.trim() !== '') {
+            filteredResults = searchResults.filter(item => 
+              item.stock_in_document && item.stock_in_document.includes(searchContent)
+            );
+          }
+          
+          // 如果没有匹配的记录，提示用户
+          if (filteredResults.length === 0) {
+            message.warning('没有找到与搜索内容匹配的记录');
+            // 清空原始搜索结果
+            setOriginalSearchResults([]);
+            setLoading(false);
+            return;
+          }
+          
+          // 上传文件到服务器
+          const uploadFormData = new FormData();
+          const fileNames: string[] = [];
+          const customFileNames: string[] = [];
+          
+          // 生成文件名前缀（使用第一个匹配记录的入库单号，如果没有则使用默认值）
+          const firstRecord = filteredResults[0];
+          const stockInNumber = firstRecord.stock_in_number || 'SI';
+          
+          for (let i = 0; i < receiptDocuments.length; i++) {
+            const file = receiptDocuments[i];
+            if (file && file.originFileObj) {
+              const fileExtension = file.name.split('.').pop();
+              const newFileName = `${stockInNumber}_${Date.now()}_${i + 1}.${fileExtension}`;
+              fileNames.push(newFileName);
+              customFileNames.push(newFileName);
+              
+              // 创建新的File对象以使用新文件名
+              const newFile = new File([file.originFileObj], newFileName, {
+                type: file.originFileObj.type
+              });
+              uploadFormData.append('files', newFile);
+            }
+          }
+          
+          // 添加自定义文件名到表单数据
+          customFileNames.forEach((name, index) => {
+            uploadFormData.append(`custom_filenames[${index}]`, name);
+          });
+          
+          let stockInDocument = '';
+          if (fileNames.length > 0) {
+            // 上传文件
+            const uploadResponse = await fetch('/api/upload/multiple', {
+              method: 'POST',
+              body: uploadFormData,
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+              }
+            });
+            
+            const uploadResult = await uploadResponse.json();
+            
+            if (uploadResult.success) {
+              // 使用上传后服务器返回的实际文件名
+              const uploadedFileNames = uploadResult.data.map((file: any) => file.filename);
+              stockInDocument = uploadedFileNames.join(', ');
+            } else {
+              // 即使上传失败，也要使用生成的文件名
+              stockInDocument = fileNames.join(', ');
+              message.warning('文件上传失败，将继续更新操作');
+            }
+          }
+          
+          // 准备要更新的数据（仅更新匹配的记录）
+          const updates = filteredResults.map(item => ({
+            id: item.id,
+            data: {
+              stock_in_document: stockInDocument
+            }
+          }));
+          
+          // 调用后端API进行批量更新
+          const response = await batchUpdateInventory(updates);
+          
+          if (response.success) {
+            // 更新前端显示的数据
+            const updatedResults = searchResults.map(item => {
+              // 检查当前项是否在更新列表中
+              const isUpdated = filteredResults.some(filteredItem => filteredItem.id === item.id);
+              if (isUpdated) {
+                return {
+                  ...item,
+                  stock_in_document: stockInDocument
+                };
+              }
+              return item;
+            });
+            
+            setSearchResults(updatedResults);
+            
+            // 清空文件列表
+            setReceiptFileList([]);
+            searchForm.setFieldsValue({
+              receipt_documents: []
+            });
+            
+            message.success(`成功更新 ${updates.length} 条记录`);
+          } else {
+            // 如果更新失败，清空原始搜索结果
+            setOriginalSearchResults([]);
+            throw new Error(response.message);
+          }
+        } catch (error: any) {
+          console.error('更新失败:', error);
+          message.error('更新失败: ' + (error.message || '未知错误'));
+          // 如果更新失败，清空原始搜索结果
+          setOriginalSearchResults([]);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+    }
+    
+    // 对于非收货单据的更新，使用原有逻辑
     // 如果更新内容为空，则不执行更新操作
     if (!updateContent || updateContent.trim() === '') {
       message.warning('更新内容为空，不执行更新操作');
       return;
     }
-    
-    // 获取当前的筛选条件
-    const currentFilterType = formValues.filterType || filterType;
     
     // 根据筛选条件确定要更新的字段
     let updateField = '';
@@ -1949,6 +2041,9 @@ const StockInPage: React.FC = () => {
       // 如果没有匹配的记录，提示用户
       if (filteredResults.length === 0) {
         message.warning('没有找到与搜索内容匹配的记录');
+        // 清空原始搜索结果
+        setOriginalSearchResults([]);
+        setLoading(false);
         return;
       }
       
@@ -2953,16 +3048,62 @@ const StockInPage: React.FC = () => {
                       </Select>
                     </Form.Item>
                   </Col>
+                  {/* 将更新内容/收货单据组件放在入库单号后面 */}
                   <Col span={6}>
-                    <Form.Item
-                      label="更新内容"
-                      name="replaceContent"
-                    >
-                      <Input 
-                        placeholder="请输入更新内容" 
-                        value={replaceValue}
-                        onChange={(e) => setReplaceValue(e.target.value)}
-                      />
+                    <Form.Item noStyle>
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) => 
+                          prevValues.filterType !== currentValues.filterType
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const currentFilterType = getFieldValue('filterType');
+                          return currentFilterType === 'receipt_documents' ? (
+                            <>
+                              {/* 收货单据时显示文件上传组件 */}
+                              <Form.Item
+                                label="收货单据文件"
+                                name="receipt_documents"
+                                extra="支持上传图片、PDF或文档文件，单文件大小不超过10MB"
+                              >
+                                <Upload 
+                                  {...receiptUploadProps} 
+                                  listType="picture-card"
+                                  fileList={receiptFileList}
+                                  onChange={(info) => {
+                                    console.log('收货单据上传:', info.fileList);
+                                    setReceiptFileList(info.fileList);
+                                    // 同时更新表单字段的值
+                                    searchForm.setFieldsValue({
+                                      receipt_documents: info.fileList
+                                    });
+                                  }}
+                                >
+                                  <div>
+                                    <PlusOutlined />
+                                    <div style={{ marginTop: 8 }}>上传文件</div>
+                                  </div>
+                                </Upload>
+                              </Form.Item>
+                            </>
+                          ) : (
+                            <>
+                              {/* 非收货单据时显示更新内容输入框 */}
+                              <Form.Item
+                                label="更新内容"
+                                name="replaceContent"
+                              >
+                                <Input 
+                                  placeholder="请输入更新内容" 
+                                  value={replaceValue}
+                                  onChange={(e) => setReplaceValue(e.target.value)}
+                                />
+                              </Form.Item>
+                            </>
+                          );
+                        }}
+                      </Form.Item>
                     </Form.Item>
                   </Col>
                 </Row>
