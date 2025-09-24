@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间格式化测试</title>
+    <script src="https://unpkg.com/dayjs@1.11.9/dayjs.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1.11.9/plugin/utc.js"></script>
+    <script src="https://unpkg.com/dayjs@1.11.9/plugin/timezone.js"></script>
+    <script>
+        // 扩展dayjs插件
+        dayjs.extend(window.dayjs_plugin_utc);
+        dayjs.extend(window.dayjs_plugin_timezone);
+
+        // 设置dayjs为中文
+        dayjs.locale('zh-cn');
+
+        /**
+         * 将UTC时间转换为北京时间显示
+         * @param utcTime UTC时间字符串
+         * @returns 北京时间格式化字符串
+         */
+        function formatToBeijingTime(utcTime) {
+            if (!utcTime) return '';
+            
+            try {
+                // 使用dayjs解析UTC时间并转换为北京时间
+                const beijingTime = dayjs(utcTime).tz('Asia/Shanghai');
+                return beijingTime.format('YYYY-MM-DD HH:mm:ss');
+            } catch (error) {
+                console.error('时间格式化错误:', error);
+                return utcTime; // 如果格式化失败，返回原始时间字符串
+            }
+        }
+
+        function testTimeFormat() {
+            const currentTime = new Date().toISOString();
+            const beijingTime = formatToBeijingTime(currentTime);
+            
+            document.getElementById('current-time').innerText = currentTime;
+            document.getElementById('beijing-time').innerText = beijingTime;
+            
+            // 测试一些示例时间
+            const testTimes = [
+                '2024-09-14T13:30:00.000Z',
+                '2024-01-01T00:00:00.000Z',
+                '2024-12-31T23:59:59.000Z'
+            ];
+            
+            const results = testTimes.map(time => {
+                return `${time} => ${formatToBeijingTime(time)}`;
+            });
+            
+            document.getElementById('test-results').innerHTML = results.join('<br>');
+        }
+    </script>
+</head>
+<body>
+    <h1>时间格式化测试</h1>
+    <button onclick="testTimeFormat()">测试时间格式化</button>
+    
+    <h2>当前时间</h2>
+    <p>UTC时间: <span id="current-time"></span></p>
+    <p>北京时间: <span id="beijing-time"></span></p>
+    
+    <h2>测试结果</h2>
+    <p id="test-results"></p>
+</body>
+</html>

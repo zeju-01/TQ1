@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户创建测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .error { background: #ffe6e6; border-color: #ff9999; }
+        .success { background: #e6ffe6; border-color: #99ff99; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>用户创建API测试</h1>
+    
+    <h2>1. 登录</h2>
+    <button onclick="testLogin()">登录获取Token</button>
+    <div id="loginResult" class="result"></div>
+    
+    <h2>2. 创建用户</h2>
+    <button onclick="testCreateUser()">创建用户</button>
+    <div id="createResult" class="result"></div>
+
+    <script>
+        let authToken = '';
+        
+        async function testLogin() {
+            const result = document.getElementById('loginResult');
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.accessToken;
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>登录成功</h4>
+                        <p>用户: ${data.data.user.username}</p>
+                        <p>角色: ${data.data.user.role}</p>
+                        <p>权限: ${data.data.user.permission}</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>登录失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testCreateUser() {
+            const result = document.getElementById('createResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            const userData = {
+                username: 'testuser' + Date.now(),
+                password: 'test123',
+                confirmPassword: 'test123',
+                full_name: '测试用户',
+                abbreviation: '测试',
+                role: 'operator',
+                permission: 'operate',
+                remarks: '这是一个测试用户'
+            };
+            
+            try {
+                result.innerHTML = '<h4>发送请求...</h4><pre>' + JSON.stringify(userData, null, 2) + '</pre>';
+                
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>创建用户成功</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `
+                        <h4>创建用户失败</h4>
+                        <p>状态码: ${response.status}</p>
+                        <p>错误信息: ${data.message}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>请求失败</h4><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

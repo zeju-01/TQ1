@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证状态诊断工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>认证状态诊断工具</h1>
+    
+    <div class="section">
+        <h2>1. 检查localStorage中的token</h2>
+        <button onclick="checkLocalStorage()">检查LocalStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. 测试登录功能</h2>
+        <input type="text" id="username" placeholder="用户名" value="superadmin">
+        <input type="password" id="password" placeholder="密码" value="admin123">
+        <button onclick="testLogin()">测试登录</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. 测试产品删除API</h2>
+        <button onclick="testProductDelete()">测试产品删除</button>
+        <div id="delete-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. 修复建议</h2>
+        <button onclick="clearAuth()">清除认证状态</button>
+        <button onclick="showFix()">显示修复步骤</button>
+        <div id="fix-result"></div>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const result = document.getElementById('localStorage-result');
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            const authStorage = localStorage.getItem('auth-storage');
+            
+            let html = '<h3>LocalStorage 状态:</h3>';
+            html += `<p>accessToken: ${accessToken ? '<span class="success">存在</span>' : '<span class="error">不存在</span>'}</p>`;
+            html += `<p>refreshToken: ${refreshToken ? '<span class="success">存在</span>' : '<span class="error">不存在</span>'}</p>`;
+            html += `<p>auth-storage: ${authStorage ? '<span class="success">存在</span>' : '<span class="error">不存在</span>'}</p>`;
+            
+            if (authStorage) {
+                try {
+                    const authData = JSON.parse(authStorage);
+                    html += '<p>认证store数据:</p>';
+                    html += `<pre>${JSON.stringify(authData, null, 2)}</pre>`;
+                } catch (e) {
+                    html += '<p class="error">认证store数据解析失败</p>';
+                }
+            }
+            
+            result.innerHTML = html;
+        }
+        
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            result.innerHTML = '<p>登录中...</p>';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>登录结果:</h3>';
+                if (data.success) {
+                    html += '<p class="success">登录成功</p>';
+                    html += `<p>用户: ${data.data.user.username} (${data.data.user.role})</p>`;
+                    html += `<p>Token长度: ${data.data.accessToken.length}</p>`;
+                    
+                    // 保存token到localStorage
+                    localStorage.setItem('accessToken', data.data.accessToken);
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                    html += '<p class="success">Token已保存到localStorage</p>';
+                } else {
+                    html += `<p class="error">登录失败: ${data.message}</p>`;
+                }
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = `<p class="error">请求失败: ${error.message}</p>`;
+            }
+        }
+        
+        async function testProductDelete() {
+            const result = document.getElementById('delete-result');
+            const token = localStorage.getItem('accessToken');
+            
+            if (!token) {
+                result.innerHTML = '<p class="error">未找到token，请先登录</p>';
+                return;
+            }
+            
+            result.innerHTML = '<p>测试删除中...</p>';
+            
+            try {
+                const response = await fetch('/api/products/999', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>删除测试结果:</h3>';
+                if (response.status === 404) {
+                    html += '<p class="success">认证成功（产品不存在是正常的）</p>';
+                } else if (response.status === 401) {
+                    html += '<p class="error">认证失败 - Token无效或已过期</p>';
+                } else {
+                    html += `<p>状态码: ${response.status}</p>`;
+                }
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = `<p class="error">请求失败: ${error.message}</p>`;
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('auth-storage');
+            document.getElementById('fix-result').innerHTML = '<p class="success">认证状态已清除，请刷新页面并重新登录</p>';
+        }
+        
+        function showFix() {
+            const html = `
+                <h3>修复步骤:</h3>
+                <ol>
+                    <li>点击"清除认证状态"按钮</li>
+                    <li>刷新页面（F5）</li>
+                    <li>重新登录系统</li>
+                    <li>检查localStorage中是否有有效token</li>
+                    <li>再次尝试删除操作</li>
+                </ol>
+                <p class="warning">如果问题仍然存在，可能是用户权限不足或后端认证配置问题</p>
+            `;
+            document.getElementById('fix-result').innerHTML = html;
+        }
+        
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

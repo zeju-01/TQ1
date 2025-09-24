@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理API测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .error { background: #ffe6e6; border-color: #ff9999; }
+        .success { background: #e6ffe6; border-color: #99ff99; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>用户管理API测试</h1>
+    
+    <h2>1. 登录测试</h2>
+    <button onclick="testLogin()">测试登录</button>
+    <div id="loginResult" class="result"></div>
+    
+    <h2>2. 获取用户列表</h2>
+    <button onclick="testGetUsers()">获取用户列表</button>
+    <div id="getUsersResult" class="result"></div>
+    
+    <h2>3. 创建用户</h2>
+    <button onclick="testCreateUser()">创建测试用户</button>
+    <div id="createUserResult" class="result"></div>
+    
+    <h2>4. 重置密码</h2>
+    <button onclick="testResetPassword()">重置用户密码</button>
+    <div id="resetPasswordResult" class="result"></div>
+
+    <script>
+        let authToken = '';
+        
+        async function testLogin() {
+            const result = document.getElementById('loginResult');
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    authToken = data.data.accessToken;
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>登录成功</h4>
+                        <p>用户名: ${data.data.user.username}</p>
+                        <p>角色: ${data.data.user.role}</p>
+                        <p>权限: ${data.data.user.permission}</p>
+                        <p>Token: ${authToken.substring(0, 50)}...</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>登录失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testGetUsers() {
+            const result = document.getElementById('getUsersResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users?page=1&limit=10', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>获取用户列表成功</h4>
+                        <p>总用户数: ${data.pagination.total}</p>
+                        <p>用户列表:</p>
+                        <ul>
+                            ${data.data.map(user => `
+                                <li>ID: ${user.id}, 用户名: ${user.username}, 角色: ${user.role}</li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>获取用户列表失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testCreateUser() {
+            const result = document.getElementById('createUserResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        username: 'testuser' + Date.now(),
+                        password: 'test123456',
+                        confirmPassword: 'test123456',
+                        full_name: '测试用户',
+                        abbreviation: '测试',
+                        role: 'operator',
+                        permission: 'operate',
+                        remarks: '这是一个测试用户'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>创建用户成功</h4>
+                        <p>用户ID: ${data.data.id}</p>
+                        <p>用户名: ${data.data.username}</p>
+                        <p>姓名: ${data.data.full_name}</p>
+                        <p>角色: ${data.data.role}</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>创建用户失败</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testResetPassword() {
+            const result = document.getElementById('resetPasswordResult');
+            if (!authToken) {
+                result.className = 'result error';
+                result.innerHTML = '<h4>错误</h4><p>请先登录</p>';
+                return;
+            }
+            
+            try {
+                // 先获取用户列表找到一个用户
+                const usersResponse = await fetch('/api/users?page=1&limit=10', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const usersData = await usersResponse.json();
+                
+                if (!usersData.success || usersData.data.length < 2) {
+                    throw new Error('需要先创建一些用户才能测试重置密码');
+                }
+                
+                // 取第二个用户（不是admin）
+                const testUser = usersData.data.find(u => u.username !== 'admin');
+                if (!testUser) {
+                    throw new Error('没有找到可以重置密码的用户');
+                }
+                
+                const response = await fetch(`/api/users/${testUser.id}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        newPassword: 'newpass123',
+                        confirmNewPassword: 'newpass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h4>重置密码成功</h4>
+                        <p>用户: ${testUser.username}</p>
+                        <p>新密码: newpass123</p>
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<h4>重置密码失败</h4><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
