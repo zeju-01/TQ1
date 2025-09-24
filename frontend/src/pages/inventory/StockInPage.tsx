@@ -1874,6 +1874,7 @@ const StockInPage: React.FC = () => {
     // 获取表单中的更新内容
     const formValues = searchForm.getFieldsValue();
     const updateContent = formValues.replaceContent;
+    const searchContent = formValues.searchContent;
     
     // 如果更新内容为空，则不执行更新操作
     if (!updateContent || updateContent.trim() === '') {
@@ -1913,8 +1914,46 @@ const StockInPage: React.FC = () => {
       // 保存原始搜索结果用于可能的重置操作（在更新之前保存）
       setOriginalSearchResults([...searchResults]);
       
-      // 准备要更新的数据
-      const updates = searchResults.map(item => ({
+      // 过滤出与搜索内容相同的记录进行更新
+      let filteredResults = [...searchResults];
+      if (searchContent && searchContent.trim() !== '') {
+        switch (currentFilterType) {
+          case 'contract_number':
+            filteredResults = searchResults.filter(item => 
+              item.contract_number && item.contract_number.includes(searchContent)
+            );
+            break;
+          case 'supplier':
+            filteredResults = searchResults.filter(item => 
+              item.supplier && item.supplier.includes(searchContent)
+            );
+            break;
+          case 'factory_order':
+            filteredResults = searchResults.filter(item => 
+              item.factory_order && item.factory_order.includes(searchContent)
+            );
+            break;
+          case 'box_number':
+            filteredResults = searchResults.filter(item => 
+              item.box_number && item.box_number.includes(searchContent)
+            );
+            break;
+          case 'receipt_documents':
+            filteredResults = searchResults.filter(item => 
+              item.stock_in_document && item.stock_in_document.includes(searchContent)
+            );
+            break;
+        }
+      }
+      
+      // 如果没有匹配的记录，提示用户
+      if (filteredResults.length === 0) {
+        message.warning('没有找到与搜索内容匹配的记录');
+        return;
+      }
+      
+      // 准备要更新的数据（仅更新匹配的记录）
+      const updates = filteredResults.map(item => ({
         id: item.id,
         data: {
           [updateField]: updateContent
@@ -1926,14 +1965,21 @@ const StockInPage: React.FC = () => {
       
       if (response.success) {
         // 更新前端显示的数据
-        const updatedResults = searchResults.map(item => ({
-          ...item,
-          [currentFilterType === 'contract_number' ? 'contract_number' : 
-           currentFilterType === 'supplier' ? 'supplier' : 
-           currentFilterType === 'factory_order' ? 'factory_order' : 
-           currentFilterType === 'box_number' ? 'box_number' :
-           'stock_in_document']: updateContent
-        }));
+        const updatedResults = searchResults.map(item => {
+          // 检查当前项是否在更新列表中
+          const isUpdated = filteredResults.some(filteredItem => filteredItem.id === item.id);
+          if (isUpdated) {
+            return {
+              ...item,
+              [currentFilterType === 'contract_number' ? 'contract_number' : 
+               currentFilterType === 'supplier' ? 'supplier' : 
+               currentFilterType === 'factory_order' ? 'factory_order' : 
+               currentFilterType === 'box_number' ? 'box_number' :
+               'stock_in_document']: updateContent
+            };
+          }
+          return item;
+        });
         
         setSearchResults(updatedResults);
         
