@@ -84,6 +84,59 @@ async function verifyDatabaseRecords() {
   }
 }
 
+// 验证特定问题记录的修复结果
+const { executeQuery } = require('./config/database');
+const { initDatabase } = require('./config/database');
+
+async function verifyFix() {
+  try {
+    console.log('=== 验证特定问题记录的修复结果 ===');
+    
+    // 初始化数据库
+    await initDatabase();
+    
+    // 查询用户反馈的具体问题记录
+    // 用户反馈: stock_in_time时间是这个2025-09-25 05:52:31 ，现在时间2025-09-25 13:52:31；还是不对
+    const query = `
+      SELECT id, product_name, stock_in_time, created_at 
+      FROM inventory 
+      WHERE stock_in_time LIKE '2025-09-25 13:52:31'
+         OR stock_in_time LIKE '2025-09-25 05:52:31'
+    `;
+    
+    const result = await executeQuery(query);
+    
+    if (result.success) {
+      console.log('用户反馈的问题记录:');
+      
+      result.data.forEach(record => {
+        console.log(`  ID: ${record.id}`);
+        console.log(`    产品名称: ${record.product_name}`);
+        console.log(`    入库时间: ${record.stock_in_time}`);
+        console.log(`    创建时间: ${record.created_at}`);
+        
+        // 验证时间是否正确
+        if (record.stock_in_time === '2025-09-25 13:52:31') {
+          console.log(`    ✅ 时间已正确修复为北京时间`);
+        } else if (record.stock_in_time === '2025-09-25 05:52:31') {
+          console.log(`    ❌ 时间仍未修复，仍为UTC时间`);
+        }
+        
+        console.log();
+      });
+    } else {
+      console.error('查询失败:', result.error);
+    }
+    
+    console.log('=== 验证完成 ===');
+  } catch (error) {
+    console.error('验证过程中出错:', error);
+  }
+}
+
+// 运行验证
+verifyFix();
+
 // 执行所有验证
 async function runAllVerifications() {
   console.log('开始验证修复后的功能...\n');

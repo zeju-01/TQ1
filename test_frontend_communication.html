@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端通信测试</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>前端通信测试</h1>
+    <button id="loginBtn">登录</button>
+    <button id="stockInBtn" disabled>入库测试</button>
+    <div id="result"></div>
+
+    <script>
+        let token = '';
+        
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    username: 'superadmin',
+                    password: 'admin123'
+                });
+                
+                token = response.data.data.accessToken;
+                document.getElementById('result').innerHTML = '<p style="color: green;">登录成功！</p>';
+                document.getElementById('stockInBtn').disabled = false;
+                console.log('登录成功，令牌：', token);
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">登录失败：' + (error.response?.data?.message || error.message) + '</p>';
+                console.error('登录失败：', error);
+            }
+        });
+        
+        document.getElementById('stockInBtn').addEventListener('click', async () => {
+            try {
+                const stockInData = {
+                    product_name: '前端界面测试产品',
+                    product_model: 'UI-Test-Model-001',
+                    operator: '中国电信',
+                    imei: '333444555666777',
+                    batch_number: 'UI-TEST-001',
+                    stock_in_quantity: 1,
+                    supplier: '前端界面测试供应商',
+                    factory_order: 'FACTORY-UI-001',
+                    stock_in_contract_number: 'CONTRACT-UI-001',
+                    stock_in_notes: '前端界面测试备注',
+                    stock_in_number: 'SI202509257777',
+                    stock_in_date: '2025-09-25',
+                    stock_in_document: '前端界面测试单据.pdf'
+                };
+                
+                console.log('发送入库数据：', stockInData);
+                
+                const response = await axios.post('/api/inventory/stock-in', stockInData, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.data.success) {
+                    document.getElementById('result').innerHTML = '<p style="color: green;">入库成功！记录ID：' + response.data.data.id + '</p>';
+                    console.log('入库成功：', response.data);
+                } else {
+                    document.getElementById('result').innerHTML = '<p style="color: red;">入库失败：' + response.data.message + '</p>';
+                    console.error('入库失败：', response.data);
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">入库出错：' + (error.response?.data?.message || error.message) + '</p>';
+                console.error('入库出错：', error);
+            }
+        });
+    </script>
+</body>
+</html>

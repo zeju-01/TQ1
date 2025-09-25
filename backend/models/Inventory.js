@@ -1,5 +1,6 @@
 // 库存数据模型
 const { executeQuery, executeTransaction } = require('../config/database');
+const { getBeijingTime, getBeijingDate, formatToDateString } = require('../utils/timeUtils');
 
 class InventoryModel {
   // 创建入库记录
@@ -21,26 +22,16 @@ class InventoryModel {
       }
 
       // 处理入库日期，确保格式为 YYYY-MM-DD
-      let formatted_stock_in_date = stock_in_date;
-      if (stock_in_date) {
-        // 尝试解析日期，如果失败则使用当前日期
-        try {
-          const date = new Date(stock_in_date);
-          if (isNaN(date.getTime())) {
-            formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-          } else {
-            // 确保日期格式为 YYYY-MM-DD
-            formatted_stock_in_date = date.toISOString().split('T')[0]; // YYYY-MM-DD
-          }
-        } catch (dateError) {
-          formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        }
-      } else {
-        formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      }
+      const formatted_stock_in_date = formatToDateString(stock_in_date);
 
       // 获取当前北京时间用于 stock_in_time 字段（保持完整时间格式）
-      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      const beijingTime = getBeijingTime();
+      console.log('当前北京时间:', beijingTime);
+      
+      // 验证时间处理是否正确
+      const testTime = new Date();
+      console.log('系统UTC时间:', testTime.toISOString());
+      console.log('转换后北京时间:', beijingTime);
 
       // 注意：根据用户要求，以下字段在入库时不应填充数据：
       // return_time, after_sales_time, stock_out_date, stock_out_time, updated_at
@@ -143,13 +134,22 @@ class InventoryModel {
       }
 
       // 生成出库自动编号
-      const stock_out_number = 'OUT' + new Date().toISOString().replace(/-/g, '').slice(0, 8) + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+      const dateStr = getBeijingDate().replace(/-/g, '');
+      const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+      const stock_out_number = 'OUT' + dateStr + random;
 
       // 获取北京时间（完整时间格式）
-      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      const beijingTime = getBeijingTime();
+      console.log('出库北京时间:', beijingTime);
       
       // 处理出库日期，确保格式为 YYYY-MM-DD
-      const stock_out_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const stock_out_date = getBeijingDate();
+      console.log('出库日期:', stock_out_date);
+      
+      // 验证时间处理是否正确
+      const testTime = new Date();
+      console.log('系统UTC时间:', testTime.toISOString());
+      console.log('转换后北京时间:', beijingTime);
       
       const query = `
         UPDATE inventory SET
@@ -198,7 +198,13 @@ class InventoryModel {
       }
 
       // 获取北京时间
-      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      const beijingTime = getBeijingTime();
+      console.log('退库北京时间:', beijingTime);
+      
+      // 验证时间处理是否正确
+      const testTime = new Date();
+      console.log('系统UTC时间:', testTime.toISOString());
+      console.log('转换后北京时间:', beijingTime);
       
       const query = `
         UPDATE inventory SET
@@ -251,16 +257,54 @@ class InventoryModel {
     }
   }
   
+  // 更新库存信息
+  static async updateById(id, updateData) {
+    try {
+      const setClause = [];
+      const params = [];
+
+      // 动态构建更新字段
+      for (const [key, value] of Object.entries(updateData)) {
+        if (value !== undefined) {
+          setClause.push(`${key} = ?`);
+          params.push(value);
+        }
+      }
+
+      if (setClause.length === 0) {
+        throw new Error('没有要更新的字段');
+      }
+
+      // 获取北京时间
+      const beijingTime = getBeijingTime();
+      console.log('更新库存北京时间:', beijingTime);
+      
+      // 验证时间处理是否正确
+      const testTime = new Date();
+      console.log('系统UTC时间:', testTime.toISOString());
+      console.log('转换后北京时间:', beijingTime);
+      
+      setClause.push('updated_at = ?');
+      params.push(beijingTime, id);
+
+      const query = `UPDATE inventory SET ${setClause.join(', ')} WHERE id = ?`;
+      const result = await executeQuery(query, params);
+      
+      if (result.success && result.data.affectedRows > 0) {
+        return await this.findById(id);
+      } else {
+        throw new Error('更新库存失败');
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // 获取最大的入库单号
   static async getMaxStockInNumber() {
     try {
       // 获取当天日期
-      const today = new Date().toLocaleDateString('zh-CN', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit',
-        timeZone: 'Asia/Shanghai'
-      }).replace(/\//g, '');
+      const today = getBeijingDate().replace(/-/g, '');
       
       // 查询当天最大的入库单号
       const query = `
@@ -452,42 +496,6 @@ class InventoryModel {
     }
   }
 
-  // 更新库存信息
-  static async updateById(id, updateData) {
-    try {
-      const setClause = [];
-      const params = [];
-
-      // 动态构建更新字段
-      for (const [key, value] of Object.entries(updateData)) {
-        if (value !== undefined) {
-          setClause.push(`${key} = ?`);
-          params.push(value);
-        }
-      }
-
-      if (setClause.length === 0) {
-        throw new Error('没有要更新的字段');
-      }
-
-      // 获取北京时间
-      const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-      setClause.push('updated_at = ?');
-      params.push(beijingTime, id);
-
-      const query = `UPDATE inventory SET ${setClause.join(', ')} WHERE id = ?`;
-      const result = await executeQuery(query, params);
-      
-      if (result.success && result.data.affectedRows > 0) {
-        return await this.findById(id);
-      } else {
-        throw new Error('更新库存失败');
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-  
   // 根据条件搜索入库单号
   static async searchStockInNumbers(filterType, searchValue) {
     try {

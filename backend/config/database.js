@@ -32,6 +32,9 @@ const initDatabase = async () => {
     // 设置时区为北京时间
     await db.exec("PRAGMA time_zone = '+08:00'");
     
+    // 禁用WAL模式，使用默认的journal模式
+    await db.exec("PRAGMA journal_mode = DELETE;");
+    
     // 创建所需的表结构
     await createTables();
     console.log(`SQLite持久化数据库初始化成功，数据文件: ${DB_PATH}`);

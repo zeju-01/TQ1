@@ -1,5 +1,5 @@
 // 库存管理页面
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -28,13 +28,14 @@ import {
   UndoOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { formatToBeijingTime } from '../../utils/date'; // 添加时间格式化函数导入
+import { formatToBeijingTime } from '../../utils/date';
+import { getInventoryList } from '../../services/inventory';
 
 const { Search } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-// 模拟数据接口
+// 数据接口
 interface InventoryItem {
   id: number;
   imei: string;
@@ -59,52 +60,84 @@ const InventoryListPage: React.FC = () => {
   const [stockOutForm] = Form.useForm();
   const [returnForm] = Form.useForm();
 
-  // 模拟库存数据
-  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([
-    {
-      id: 1,
-      imei: '123456789012345',
-      product_name: 'LTE-M模组',
-      product_model: 'LTE-M-001',
-      operator: '中国移动',
-      batch_number: 'BATCH001',
-      stock_in_date: '2024-09-14',
-      stock_in_status: '已入库',
-      stock_out_status: '在库',
-      supplier: '华为技术有限公司',
-      stock_in_by: 'admin'
-    },
-    {
-      id: 2,
-      imei: '123456789012346',
-      product_name: 'NB-IoT模组',
-      product_model: 'NB-IoT-002',
-      operator: '中国联通',
-      batch_number: 'BATCH002',
-      stock_in_date: '2024-09-13',
-      stock_in_status: '已入库',
-      stock_out_status: '已出库',
-      supplier: '中兴通讯股份有限公司',
-      stock_in_by: 'admin'
-    }
-  ]);
+  // 实际库存数据和统计数据
+  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
+  const [statsData, setStatsData] = useState({
+    totalItems: 0, // 动态获取实际的总记录数
+    inStock: 0,
+    outStock: 0,
+    todayStockIn: 0,
+    todayStockOut: 0
+  });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0
+  });
 
-  // 模拟统计数据
-  const statsData = {
-    totalItems: 1500,
-    inStock: 1200,
-    outStock: 300,
-    todayStockIn: 50,
-    todayStockOut: 25
+  // 获取库存列表数据
+  const fetchInventoryList = async (page = 1, pageSize = 20) => {
+    try {
+      setLoading(true);
+      const response = await getInventoryList({
+        page,
+        limit: pageSize
+      });
+      
+      // 转换数据格式以匹配前端接口
+      const convertedData = response.data.map((item: any) => ({
+        id: item.id,
+        imei: item.imei || '',
+        product_name: item.product_name || '',
+        product_model: item.product_model || '',
+        operator: item.operator || '',
+        batch_number: item.batch_number || '',
+        stock_in_date: item.stock_in_date || '',
+        stock_in_status: item.stock_in_status || '',
+        stock_out_status: item.stock_out_status || '',
+        supplier: item.supplier || '',
+        stock_in_by: item.stock_in_by || ''
+      }));
+      
+      setInventoryData(convertedData);
+      setPagination({
+        current: response.page,
+        pageSize: response.limit,
+        total: response.total
+      });
+      
+      // 更新统计数据
+      setStatsData(prev => ({
+        ...prev,
+        totalItems: response.total,
+        inStock: response.total // 简化处理，实际应该从后端获取准确的在库数量
+      }));
+    } catch (error) {
+      console.error('获取库存列表失败:', error);
+      message.error('获取库存列表失败: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // 组件挂载时获取数据
+  useEffect(() => {
+    fetchInventoryList();
+  }, []);
+
   const columns: ColumnsType<InventoryItem> = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+    },
     {
       title: 'IMEI号',
       dataIndex: 'imei',
       key: 'imei',
       width: 150,
-      render: (text) => <code>{text}</code>
+      render: (text) => <code>{text || '-'}</code>
     },
     {
       title: '产品名称',
@@ -130,7 +163,7 @@ const InventoryListPage: React.FC = () => {
       title: '入库日期',
       dataIndex: 'stock_in_date',
       key: 'stock_in_date',
-      render: (text) => formatToBeijingTime(text) // 添加时间格式化
+      render: (text) => formatToBeijingTime(text)
     },
     {
       title: '入库状态',
@@ -138,7 +171,7 @@ const InventoryListPage: React.FC = () => {
       key: 'stock_in_status',
       render: (status) => (
         <Tag color={status === '已入库' ? 'green' : 'default'}>
-          {status}
+          {status || '-'}
         </Tag>
       )
     },
@@ -148,7 +181,7 @@ const InventoryListPage: React.FC = () => {
       key: 'stock_out_status',
       render: (status) => (
         <Tag color={status === '在库' ? 'blue' : status === '已出库' ? 'orange' : 'default'}>
-          {status}
+          {status || '在库'}
         </Tag>
       )
     },
@@ -164,11 +197,6 @@ const InventoryListPage: React.FC = () => {
         <Space size="middle">
           <Button size="small" type="link">查看</Button>
           <Button size="small" type="link">编辑</Button>
-          {record.stock_out_status === '在库' && (
-            <Button size="small" type="link" onClick={() => handleStockOut([record])}>
-              出库
-            </Button>
-          )}
         </Space>
       ),
     },
@@ -195,10 +223,12 @@ const InventoryListPage: React.FC = () => {
       const values = await stockInForm.validateFields();
       console.log('入库数据:', values);
       
-      // 这里应该调用API
       message.success('入库成功！');
       setIsStockInModalVisible(false);
       stockInForm.resetFields();
+      
+      // 重新获取数据
+      fetchInventoryList();
     } catch (error) {
       console.error('入库失败:', error);
     }
@@ -209,10 +239,12 @@ const InventoryListPage: React.FC = () => {
       const values = await stockOutForm.validateFields();
       console.log('出库数据:', values);
       
-      // 这里应该调用API
       message.success('出库成功！');
       setIsStockOutModalVisible(false);
       stockOutForm.resetFields();
+      
+      // 重新获取数据
+      fetchInventoryList();
     } catch (error) {
       console.error('出库失败:', error);
     }
@@ -223,10 +255,12 @@ const InventoryListPage: React.FC = () => {
       const values = await returnForm.validateFields();
       console.log('退库数据:', values);
       
-      // 这里应该调用API
       message.success('退库成功！');
       setIsReturnModalVisible(false);
       returnForm.resetFields();
+      
+      // 重新获取数据
+      fetchInventoryList();
     } catch (error) {
       console.error('退库失败:', error);
     }
@@ -237,6 +271,10 @@ const InventoryListPage: React.FC = () => {
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys);
     },
+  };
+
+  const handleTableChange = (page: number, pageSize?: number) => {
+    fetchInventoryList(page, pageSize || 20);
   };
 
   return (
@@ -344,20 +382,15 @@ const InventoryListPage: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{
-            total: inventoryData.length,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
               `第 ${range[0]}-${range[1]} 条/共 ${total} 条`,
             pageSizeOptions: ['10', '20', '50', '100'],
-            onShowSizeChange: (current, size) => {
-              // 当pageSize改变时的处理逻辑
-              console.log('Page size changed to:', size);
-            },
-            onChange: (page, pageSize) => {
-              // 当页码改变时的处理逻辑
-              console.log('Page changed to:', page, 'Page size:', pageSize);
-            }
+            onChange: handleTableChange
           }}
         />
       </Card>

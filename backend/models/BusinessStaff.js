@@ -1,5 +1,6 @@
 // 业务人员数据模型
 const { executeQuery } = require('../config/database');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class BusinessStaffModel {
   // 创建业务人员
@@ -87,14 +88,15 @@ class BusinessStaffModel {
         throw new Error('业务人员姓名已存在');
       }
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE business_staff 
         SET staff_name = ?, nickname = ?, position = ?, department = ?, phone = ?, email = ?, 
-            contact_info = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+            contact_info = ?, status = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [staff_name, nickname, position, department, phone, email, contact_info, status || 'active', id];
+      const params = [staff_name, nickname, position, department, phone, email, contact_info, status || 'active', beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {

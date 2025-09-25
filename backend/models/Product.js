@@ -1,5 +1,6 @@
 // 产品数据模型
 const { executeQuery } = require('../config/database');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class ProductModel {
   // 创建产品
@@ -75,13 +76,14 @@ class ProductModel {
     try {
       const { name, model, description, abbreviation } = productData;
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE products 
-        SET name = ?, model = ?, description = ?, abbreviation = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, model = ?, description = ?, abbreviation = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [name, model, description, abbreviation, id];
+      const params = [name, model, description, abbreviation, beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {

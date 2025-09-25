@@ -1,5 +1,6 @@
 // 快递公司数据模型
 const { executeQuery } = require('../config/database');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class CourierModel {
   // 创建快递公司
@@ -72,14 +73,15 @@ class CourierModel {
         throw new Error('快递公司名称已存在');
       }
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE couriers 
         SET name = ?, code = ?, description = ?, contact_person = ?, phone = ?, 
-            email = ?, address = ?, tracking_url = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+            email = ?, address = ?, tracking_url = ?, status = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [name, code, description, contact_person, phone, email, address, tracking_url, status || 'active', id];
+      const params = [name, code, description, contact_person, phone, email, address, tracking_url, status || 'active', beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {

@@ -1,5 +1,6 @@
 // 供应商数据模型
 const { executeQuery } = require('../config/database');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class SupplierModel {
   // 创建供应商
@@ -72,14 +73,15 @@ class SupplierModel {
         throw new Error('供应商公司名称已存在');
       }
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE suppliers 
         SET company_name = ?, contact_person = ?, phone = ?, email = ?, address = ?, 
-            contact_info = ?, other_info = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+            contact_info = ?, other_info = ?, status = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [company_name, contact_person, phone, email, address, contact_info, other_info, status || 'active', id];
+      const params = [company_name, contact_person, phone, email, address, contact_info, other_info, status || 'active', beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {

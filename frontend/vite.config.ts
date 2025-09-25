@@ -13,12 +13,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
     host: true,
     strictPort: false, // 不严格使用指定端口，如果端口被占用则使用其他可用端口
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // 指向后端服务的3000端口
+        target: 'http://localhost:3001', // 指向后端服务的3001端口
         changeOrigin: true,
       },
     },

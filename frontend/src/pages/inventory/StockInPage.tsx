@@ -1023,7 +1023,7 @@ const StockInPage: React.FC = () => {
         // 添加入库单号字段
         stock_in_number: values.stock_in_number || '',
         // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
-        stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'),
         // 添加收货单据信息
         stock_in_document: stockInDocument || ''
       };
@@ -1216,7 +1216,7 @@ const StockInPage: React.FC = () => {
         stockInDocument = fileNames.join(', ');
       }
 
-      const stockInTime = values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : dayjs().format('YYYY-MM-DD HH:mm:ss');
+      const stockInTime = values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
       const stockInNumber = values.stock_in_number || '';
 
       const newItem = {
@@ -2256,7 +2256,7 @@ const StockInPage: React.FC = () => {
         const updatedItem: StockInItem = {
           ...updatingItem,
           ...values,
-          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : ''
+          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : ''
         };
         
         setSearchResults(prev => 
@@ -2309,7 +2309,7 @@ const StockInPage: React.FC = () => {
         const updatedItem: StockInItem = {
           ...editingItem,
           ...values,
-          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD HH:mm:ss') : ''
+          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : ''
         };
         
         setBatchItems(prev => 

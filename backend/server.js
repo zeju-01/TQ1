@@ -16,7 +16,7 @@ const { testConnection } = require('./config/database');
 
 // 创建Express应用
 const app = express();
-const PORT = process.env.PORT || 3000; // 更改端口号为5002，避免端口冲突
+const PORT = process.env.PORT || 3001; // 更改端口号为3001，避免端口冲突
 const HOST = process.env.HOST || 'localhost';
 
 // 安全中间件

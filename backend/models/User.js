@@ -1,6 +1,7 @@
 // 用户数据模型
 const { promisePool, executeQuery } = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class UserModel {
   // 创建用户
@@ -84,8 +85,9 @@ class UserModel {
   // 更新最后登录时间
   static async updateLastLogin(userId) {
     try {
-      const query = 'UPDATE users SET last_login = datetime("now", "+8 hours") WHERE id = ?';
-      const result = await executeQuery(query, [userId]);
+      const beijingTime = getBeijingTime();
+      const query = 'UPDATE users SET last_login = ? WHERE id = ?';
+      const result = await executeQuery(query, [beijingTime, userId]);
       return result.success;
     } catch (error) {
       throw error;
@@ -106,13 +108,14 @@ class UserModel {
     try {
       const { role, full_name, abbreviation, permission, remarks } = userData;
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE users 
-        SET role = ?, full_name = ?, abbreviation = ?, permission = ?, remarks = ?, updated_at = CURRENT_TIMESTAMP
+        SET role = ?, full_name = ?, abbreviation = ?, permission = ?, remarks = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [role, full_name, abbreviation, permission, remarks, id];
+      const params = [role, full_name, abbreviation, permission, remarks, beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {
@@ -131,8 +134,9 @@ class UserModel {
       const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
       const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-      const query = 'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-      const result = await executeQuery(query, [hashedPassword, id]);
+      const beijingTime = getBeijingTime();
+      const query = 'UPDATE users SET password = ?, updated_at = ? WHERE id = ?';
+      const result = await executeQuery(query, [hashedPassword, beijingTime, id]);
       
       return result.success;
     } catch (error) {

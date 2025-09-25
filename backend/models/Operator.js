@@ -1,5 +1,6 @@
 // 运营商数据模型
 const { executeQuery } = require('../config/database');
+const { getBeijingTime } = require('../utils/timeUtils');
 
 class OperatorModel {
   // 创建运营商
@@ -72,14 +73,15 @@ class OperatorModel {
         throw new Error('运营商名称已存在');
       }
       
+      const beijingTime = getBeijingTime();
       const query = `
         UPDATE operators 
         SET name = ?, code = ?, description = ?, contact_person = ?, phone = ?, 
-            email = ?, address = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+            email = ?, address = ?, status = ?, updated_at = ?
         WHERE id = ?
       `;
       
-      const params = [name, code, description, contact_person, phone, email, address, status || 'active', id];
+      const params = [name, code, description, contact_person, phone, email, address, status || 'active', beijingTime, id];
       const result = await executeQuery(query, params);
       
       if (result.success) {

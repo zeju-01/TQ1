@@ -160,7 +160,7 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
         // 添加入库单号字段
         stock_in_number: item.stock_in_number || '',
         // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
-        stock_in_date: item.stock_in_date || new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        stock_in_date: item.stock_in_date || new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-'), // YYYY-MM-DD (北京时间)
         stock_in_by: 'current_user', // 这里应该从认证信息中获取当前用户
         // 直接使用已有的收货单据信息
         stock_in_document: stockInDocument || undefined
@@ -219,7 +219,18 @@ export const getInventoryList = async (
 ): Promise<{ data: Inventory[]; total: number; page: number; limit: number }> => {
   try {
     const response = await api.get('/inventory', { params });
-    return response.data;
+    // 处理后端返回的数据格式
+    if (response.data.pagination) {
+      return {
+        data: response.data.data,
+        total: response.data.pagination.total,
+        page: response.data.pagination.page,
+        limit: response.data.pagination.limit
+      };
+    } else {
+      // 如果是旧格式，保持兼容性
+      return response.data;
+    }
   } catch (error: any) {
     throw new Error(error.response?.data?.message || '获取库存列表失败');
   }
