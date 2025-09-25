@@ -102,6 +102,19 @@ mysql -u root -p < database/init.sql
 mysql -u root -p < database/seed.sql
 ```
 
+## 数据库迁移
+
+### 入库和出库时间格式更新 (YYYY-MM-DD)
+
+系统最近更新了入库和出库时间字段的格式，从完整的日期时间 (YYYY-MM-DD HH:MM:SS) 改为仅日期格式 (YYYY-MM-DD)。
+
+要应用此更改，请运行以下迁移脚本：
+
+```bash
+cd backend
+node scripts/run-stock-date-migration.js
+```
+
 ## 开发规范
 
 - 使用TypeScript进行类型检查

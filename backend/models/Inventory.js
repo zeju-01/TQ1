@@ -20,26 +20,26 @@ class InventoryModel {
         }
       }
 
-      // 处理入库日期，确保格式正确
+      // 处理入库日期，确保格式为 YYYY-MM-DD
       let formatted_stock_in_date = stock_in_date;
       if (stock_in_date) {
-        // 尝试解析日期，如果失败则使用当前时间
+        // 尝试解析日期，如果失败则使用当前日期
         try {
           const date = new Date(stock_in_date);
           if (isNaN(date.getTime())) {
-            formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+            formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
           } else {
-            // 确保日期格式正确
-            formatted_stock_in_date = date.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+            // 确保日期格式为 YYYY-MM-DD
+            formatted_stock_in_date = date.toISOString().split('T')[0]; // YYYY-MM-DD
           }
         } catch (dateError) {
-          formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+          formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         }
       } else {
-        formatted_stock_in_date = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        formatted_stock_in_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       }
 
-      // 获取当前北京时间用于 stock_in_time 字段
+      // 获取当前北京时间用于 stock_in_time 字段（保持完整时间格式）
       const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
       // 注意：根据用户要求，以下字段在入库时不应填充数据：
@@ -67,9 +67,9 @@ class InventoryModel {
         stock_in_number || null,
         // 添加 stock_in_auto_number 字段，显式设置为 NULL
         null,
-        // 添加 stock_in_time 字段，使用当前北京时间
+        // 添加 stock_in_time 字段，使用当前北京时间（完整时间格式）
         beijingTime,
-        // 添加created_at字段，使用当前时间
+        // 添加created_at字段，使用当前时间（完整时间格式）
         beijingTime
       ];
 
@@ -145,8 +145,11 @@ class InventoryModel {
       // 生成出库自动编号
       const stock_out_number = 'OUT' + new Date().toISOString().replace(/-/g, '').slice(0, 8) + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
 
-      // 获取北京时间
+      // 获取北京时间（完整时间格式）
       const beijingTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+      
+      // 处理出库日期，确保格式为 YYYY-MM-DD
+      const stock_out_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
       const query = `
         UPDATE inventory SET
@@ -160,7 +163,7 @@ class InventoryModel {
       `;
 
       const params = [
-        stock_out_number, beijingTime, stock_out_quantity, stock_out_contract_number,
+        stock_out_number, stock_out_date, stock_out_quantity, stock_out_contract_number,
         sales_order_number, recipient, delivery_info, courier_company,
         tracking_number, beijingTime, stock_out_by, stock_out_notes, customer, beijingTime, imei
       ];

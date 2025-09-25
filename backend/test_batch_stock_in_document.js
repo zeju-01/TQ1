@@ -41,7 +41,7 @@ const batchStockInList = [
     stock_in_contract_number: 'BATCH-CONTRACT001',
     stock_in_notes: '批量测试入库备注A',
     stock_in_number: 'SI202509230004',
-    stock_in_date: new Date().toISOString(),
+    stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
     stock_in_by: 'batch_test_user',
     stock_in_document: 'SI202509230004_1.pdf, SI202509230004_2.docx'  // 收货单据文件名
   },
@@ -57,7 +57,7 @@ const batchStockInList = [
     stock_in_contract_number: 'BATCH-CONTRACT002',
     stock_in_notes: '批量测试入库备注B',
     stock_in_number: 'SI202509230005',
-    stock_in_date: new Date().toISOString(),
+    stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
     stock_in_by: 'batch_test_user',
     stock_in_document: 'SI202509230005_1.pdf'  // 收货单据文件名
   }

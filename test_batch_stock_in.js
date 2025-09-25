@@ -42,7 +42,7 @@ async function runBatchStockInTest() {
         quantity: 2,
         supplier: '批量测试供应商2',
         factory_order: 'BATCH_TEST_ORDER2',
-        stock_in_date: new Date().toISOString(), // 使用ISO格式测试
+        stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19), // 使用ISO格式测试
         contract_number: 'BATCH_TEST_CONTRACT2',
         stock_in_document: '批量测试收货单据2.xlsx',
         remark: '批量测试备注2',

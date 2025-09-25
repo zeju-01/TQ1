@@ -1,0 +1,12 @@
+查看终端：netstat -ano | findstr :3000
+结束端口进程 tasklist | findstr xxxx
+启动终端 cd /d f:\Workstation\BaiduNetdiskWorkspace\else\qoder\TQ1\backend
+        node server.js
+
+后端服务运行在 http://localhost:3000/
+前端服务运行在 http://localhost:5173/
+
+启动后端
+cd f:\Workstation\BaiduNetdiskWorkspace\else\qoder\TQ1\backend; npm start
+启动前端
+cd f:\Workstation\BaiduNetdiskWorkspace\else\qoder\TQ1\frontend; npm run dev

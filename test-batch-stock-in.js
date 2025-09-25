@@ -16,7 +16,7 @@ const testBatchData = [
     stock_in_contract_number: 'CONTRACT001',
     stock_in_notes: '测试备注',
     stock_in_number: 'SI202509230001',
-    stock_in_date: new Date().toISOString(),
+    stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
     stock_in_document: 'SI202509230001_1.pdf, SI202509230001_2.docx'
   },
   {
@@ -31,7 +31,7 @@ const testBatchData = [
     stock_in_contract_number: 'CONTRACT002',
     stock_in_notes: '测试备注',
     stock_in_number: 'SI202509230002',
-    stock_in_date: new Date().toISOString(),
+    stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
     stock_in_document: 'SI202509230002_1.pdf'
   }
 ];

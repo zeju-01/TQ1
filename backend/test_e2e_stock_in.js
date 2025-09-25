@@ -41,7 +41,7 @@ async function simulateFrontendRequest(stockInDocument) {
     stock_in_contract_number: 'CONTRACT003',
     stock_in_notes: '端到端测试入库备注',
     stock_in_number: 'SI202509230004',
-    stock_in_date: new Date().toISOString(),
+    stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
     stock_in_document: stockInDocument  // 这是从文件上传过程中获得的文件名
   };
   

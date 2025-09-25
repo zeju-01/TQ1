@@ -160,7 +160,7 @@ export const batchStockIn = async (stockInList: StockInItem[]): Promise<StockInR
         // 添加入库单号字段
         stock_in_number: item.stock_in_number || '',
         // 修复字段名不匹配的问题：前端使用 stock_in_date，后端需要 stock_in_date
-        stock_in_date: item.stock_in_date || new Date().toISOString(),
+        stock_in_date: item.stock_in_date || new Date().toISOString().split('T')[0], // YYYY-MM-DD
         stock_in_by: 'current_user', // 这里应该从认证信息中获取当前用户
         // 直接使用已有的收货单据信息
         stock_in_document: stockInDocument || undefined

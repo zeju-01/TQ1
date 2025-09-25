@@ -473,6 +473,118 @@ const StockInPage: React.FC = () => {
     }
   }, [stockInNumbers]);
 
+  // 计算搜索汇总数据
+  const searchSummaryData = useMemo(() => {
+    console.log('计算搜索汇总数据，searchResults:', searchResults);
+    if (!searchResults || searchResults.length === 0) {
+      console.log('搜索结果为空，返回空数组');
+      return [];
+    }
+    if (!searchResults || searchResults.length === 0) {
+      return [];
+    }
+
+    // 按产品名称、产品型号、运营商分组统计
+    const summaryMap = new Map<string, {
+      product_name: string;
+      product_model: string;
+      operator: string;
+      total_quantity: number;
+      stock_in_dates: string[];
+    }>();
+
+    searchResults.forEach(item => {
+      // 处理产品名称，如果是数字ID则转换为产品名称
+      let productName: string = '';
+      if (typeof item.product_name === 'number') {
+        const product = products.find(p => p.id === item.product_name);
+        productName = (product && product.name) ? product.name : `产品ID: ${item.product_name}`;
+      } else if (typeof item.product_name === 'string' && !isNaN(Number(item.product_name))) {
+        // 如果是数字字符串，也尝试查找产品
+        const productId = parseInt(item.product_name, 10);
+        const product = products.find(p => p.id === productId);
+        productName = (product && product.name) ? product.name : item.product_name;
+      } else {
+        productName = item.product_name as string;
+      }
+
+      const key = `${productName}-${item.product_model}-${item.operator}`;
+      
+      if (summaryMap.has(key)) {
+        const existing = summaryMap.get(key)!;
+        existing.total_quantity += item.quantity || 0;
+        if (item.stock_in_date && !existing.stock_in_dates.includes(item.stock_in_date)) {
+          existing.stock_in_dates.push(item.stock_in_date);
+        }
+      } else {
+        summaryMap.set(key, {
+          product_name: productName,
+          product_model: item.product_model || '',
+          operator: item.operator || '',
+          total_quantity: item.quantity || 0,
+          stock_in_dates: item.stock_in_date ? [item.stock_in_date] : []
+        });
+      }
+    });
+
+    // 转换为数组并添加序号
+    return Array.from(summaryMap.values()).map((item, index) => ({
+      id: index + 1,
+      product_name: item.product_name,
+      product_model: item.product_model,
+      operator: item.operator,
+      total_quantity: item.total_quantity,
+      stock_in_date: item.stock_in_dates.sort().join(', ') // 按时间排序后连接
+    }));
+  }, [searchResults, products]);
+
+  // 搜索汇总表格列定义
+  const searchSummaryColumns: ColumnsType<{
+    id: number;
+    product_name: string;
+    product_model: string;
+    operator: string;
+    total_quantity: number;
+    stock_in_date: string;
+  }> = [
+    {
+      title: '序号',
+      dataIndex: 'id',
+      key: 'id',
+      width: 60,
+    },
+    {
+      title: '产品名称',
+      dataIndex: 'product_name',
+      key: 'product_name',
+      width: 150,
+    },
+    {
+      title: '产品型号',
+      dataIndex: 'product_model',
+      key: 'product_model',
+      width: 150,
+    },
+    {
+      title: '运营商',
+      dataIndex: 'operator',
+      key: 'operator',
+      width: 120,
+    },
+    {
+      title: '总数',
+      dataIndex: 'total_quantity',
+      key: 'total_quantity',
+      width: 80,
+    },
+    {
+      title: '入库时间',
+      dataIndex: 'stock_in_date',
+      key: 'stock_in_date',
+      width: 200,
+    },
+  ];
+
   const uploadProps = {
     name: 'file',
     multiple: true,
@@ -636,7 +748,7 @@ const StockInPage: React.FC = () => {
             if (formValues.remark) formData.remark = formValues.remark;
             if (formValues.stock_in_number) formData.stock_in_number = formValues.stock_in_number;
             // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
-            if (formValues.stock_in_date) formData.stock_in_date = formValues.stock_in_date.format('YYYY-MM-DD HH:mm:ss');
+            if (formValues.stock_in_date) formData.stock_in_date = formValues.stock_in_date.format('YYYY-MM-DD');
             
             // 处理产品名称 - 如果表单中的product_name是数字ID，需要转换为产品名称
             let productName = '';
@@ -704,7 +816,7 @@ const StockInPage: React.FC = () => {
               contract_number: item.contract_number || item.contractNumber || item['合同编号'] || formData.contract_number || '',
               stock_in_number: item.stock_in_number || item.stockInNumber || item['入库单号'] || formData.stock_in_number || '',
               // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
-              stock_in_date: item.stock_in_date || item.stockInTime || item['入库时间'] || formData.stock_in_date || dayjs().format('YYYY-MM-DD HH:mm:ss'),
+              stock_in_date: item.stock_in_date || item.stockInTime || item['入库时间'] || formData.stock_in_date || dayjs().format('YYYY-MM-DD'),
               supplier: item.supplier || item.Supplier || item['供应商'] || formData.supplier || '',
               remark: item.remark || item.Remark || item['备注'] || formData.remark || '',
               receipt_documents: batchReceiptDocuments, // 保存原始文件对象，用于后续上传
@@ -1628,6 +1740,7 @@ const StockInPage: React.FC = () => {
             status: 'success' as 'success'
           }));
           
+          console.log('设置搜索结果:', convertedRecords);
           setSearchResults(convertedRecords);
         } else {
           setSearchResults([]);
@@ -1696,14 +1809,17 @@ const StockInPage: React.FC = () => {
             status: 'success' as 'success'
           }));
           
+          console.log('设置搜索结果:', convertedRecords);
           setSearchResults(convertedRecords);
         } else {
+          console.log('搜索结果为空，设置空数组');
           setSearchResults([]);
         }
       } else {
         // 如果没有筛选条件或搜索内容，清空结果
         setStockInNumbers([]);
         setSelectedStockInNumber('');
+        console.log('重置搜索结果为空数组');
         setSearchResults([]);
       }
     } catch (error: any) {
@@ -1745,6 +1861,7 @@ const StockInPage: React.FC = () => {
           status: 'success' as 'success'
         }));
         
+        console.log('加载入库记录，设置搜索结果:', convertedRecords);
         setSearchResults(convertedRecords);
         message.success(`加载了 ${convertedRecords.length} 条记录`);
       } catch (error: any) {
@@ -3165,6 +3282,22 @@ const StockInPage: React.FC = () => {
               </Form>
             </Card>
             
+            {/* 搜索汇总表格 */}
+            {searchSummaryData.length > 0 && (
+              <div style={{ margin: '24px 0' }}>
+                <Card title="搜索汇总" size="small" style={{ border: '1px solid #d9d9d9' }}>
+                  <Table
+                    columns={searchSummaryColumns}
+                    dataSource={searchSummaryData}
+                    pagination={false}
+                    rowKey="id"
+                    size="small"
+                    scroll={{ x: 800 }}
+                  />
+                </Card>
+              </div>
+            )}
+            
             <Card 
               title="搜索结果"
               size="small"
@@ -3256,7 +3389,7 @@ const StockInPage: React.FC = () => {
                     })}
                   </div>
                 </div>
-              
+
               <Table
                 columns={searchColumns}
                 dataSource={searchResults}
@@ -3264,9 +3397,9 @@ const StockInPage: React.FC = () => {
                   current: currentPage,
                   pageSize: pageSize,
                   total: searchResults.length,
-                  onChange: (page, pageSize) => {
+                  onChange: (page: number, pageSize?: number) => {
                     setCurrentPage(page);
-                    setPageSize(pageSize);
+                    setPageSize(pageSize || 10);
                   },
                   showSizeChanger: true,
                   pageSizeOptions: ['10', '20', '50', '100']

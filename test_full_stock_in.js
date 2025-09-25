@@ -72,7 +72,7 @@ async function testFullStockInProcess() {
       imei: "123456789012352",
       stock_in_quantity: 1,
       supplier: "测试供应商",
-      stock_in_date: new Date().toISOString(),
+      stock_in_date: stock_in_date: new Date(new Date().getTime() + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
       stock_in_document: uploadedFileName // 使用上传后的文件名
     };
 

@@ -211,7 +211,7 @@ const createTables = async () => {
       supplier VARCHAR(100),
       factory_name VARCHAR(100),
       factory_order VARCHAR(50),
-      stock_in_date DATETIME,  -- 移除了默认值
+      stock_in_date DATE,  -- 修改为 DATE 类型，只存储年月日
       stock_in_contract_number VARCHAR(50),
       stock_in_document VARCHAR(100),
       stock_in_document_path VARCHAR(255),
@@ -228,7 +228,7 @@ const createTables = async () => {
       stock_out_number VARCHAR(50),
       stock_out_document VARCHAR(100),
       stock_out_document_path VARCHAR(255),
-      stock_out_date DATETIME,  -- 移除了默认值
+      stock_out_date DATE,  -- 修改为 DATE 类型，只存储年月日
       stock_out_quantity INTEGER,
       stock_out_contract_number VARCHAR(50),
       sales_order_number VARCHAR(50),

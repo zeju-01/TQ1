@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
     `supplier` VARCHAR(100) NULL COMMENT '供应商',
     `factory_name` VARCHAR(100) NULL COMMENT '工厂名称',
     `factory_order` VARCHAR(50) NULL COMMENT '工厂工单',
-    `stock_in_date` TIMESTAMP NULL COMMENT '入库时间',
+    `stock_in_date` DATE NULL COMMENT '入库日期',  -- 修改为 DATE 类型，只存储年月日
     `stock_in_contract_number` VARCHAR(50) NULL COMMENT '入库合同号',
     `stock_in_document` VARCHAR(100) NULL COMMENT '入库单据名称',
     `stock_in_document_path` VARCHAR(255) NULL COMMENT '入库单据文件路径',
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
     `stock_out_number` VARCHAR(50) NULL COMMENT '出库单号',
     `stock_out_document` VARCHAR(100) NULL COMMENT '出库单据名称',
     `stock_out_document_path` VARCHAR(255) NULL COMMENT '出库单据文件路径',
-    `stock_out_date` TIMESTAMP NULL COMMENT '出库时间',
+    `stock_out_date` DATE NULL COMMENT '出库日期',  -- 修改为 DATE 类型，只存储年月日
     `stock_out_quantity` INT NULL COMMENT '出库数量',
     `stock_out_contract_number` VARCHAR(50) NULL COMMENT '出库合同号',
     `sales_order_number` VARCHAR(50) NULL COMMENT '销售单号',
