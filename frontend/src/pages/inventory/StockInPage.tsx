@@ -413,6 +413,30 @@ const StockInPage: React.FC = () => {
     loadInitialStockInNumber();
   }, []);
 
+  // 添加一个useEffect来处理标签页切换时重新获取入库单号
+  useEffect(() => {
+    const reloadStockInNumber = async () => {
+      if (activeTab === 'single' || activeTab === 'batch') {
+        const newStockInNumber = await fetchMaxStockInNumber();
+        setCurrentStockInNumber(newStockInNumber);
+        setStockInCounter(prev => prev + 1);
+        
+        // 更新对应表单的入库单号
+        if (activeTab === 'single') {
+          singleForm.setFieldsValue({
+            stock_in_number: newStockInNumber
+          });
+        } else if (activeTab === 'batch') {
+          batchForm.setFieldsValue({
+            stock_in_number: newStockInNumber
+          });
+        }
+      }
+    };
+    
+    reloadStockInNumber();
+  }, [activeTab]);
+
   useEffect(() => {
     loadProducts();
     loadOperators();
