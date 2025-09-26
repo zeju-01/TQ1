@@ -83,6 +83,7 @@ interface StockInItem {
   custom_file_names?: string[];
   status: 'pending' | 'success' | 'error';
   error_message?: string;
+  updated_by?: string;
 }
 
 const StockInPage: React.FC = () => {
@@ -1870,7 +1871,8 @@ const StockInPage: React.FC = () => {
             supplier: record.supplier || '',
             remark: record.stock_in_notes || '',
             receipt_documents: [],
-            status: 'pending' as 'pending'
+            status: 'pending' as 'pending',
+            updated_by: record.updated_by || ''
           }));
           
           console.log('设置搜索结果:', convertedRecords);
@@ -1940,7 +1942,8 @@ const StockInPage: React.FC = () => {
             supplier: record.supplier || '',
             remark: record.stock_in_notes || '',
             receipt_documents: [],
-            status: 'pending' as 'pending'
+            status: 'pending' as 'pending',
+            updated_by: record.updated_by || ''
           }));
           
           console.log('设置搜索结果:', convertedRecords);
@@ -1992,7 +1995,8 @@ const StockInPage: React.FC = () => {
           supplier: record.supplier || '',
           remark: record.stock_in_notes || '',
           receipt_documents: [],
-          status: 'pending' as 'pending'
+          status: 'pending' as 'pending',
+          updated_by: record.updated_by || ''
         }));
         
         console.log('加载入库记录，设置搜索结果:', convertedRecords);
@@ -2603,6 +2607,13 @@ const StockInPage: React.FC = () => {
       key: 'remark',
       width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
+    },
+    {
+      title: '更新人',
+      dataIndex: 'updated_by',
+      key: 'updated_by',
+      width: 'auto',
+      render: (text) => <span style={{ fontSize: '14px' }}>{text || '-'}</span>
     },
     {
       title: '状态',

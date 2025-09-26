@@ -307,6 +307,13 @@ class InventoryModel {
       
       setClause.push('updated_at = ?');
       params.push(beijingTime);
+      
+      // 如果提供了 updated_by，则也更新该字段
+      if (updateData.updated_by) {
+        setClause.push('updated_by = ?');
+        params.push(updateData.updated_by);
+      }
+      
       params.push(id);  // 将 id 添加到参数数组的末尾
 
       const query = `UPDATE inventory SET ${setClause.join(', ')} WHERE id = ?`;

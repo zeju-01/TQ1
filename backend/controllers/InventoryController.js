@@ -250,6 +250,15 @@ class InventoryController {
     try {
       const { id } = req.params;
       const updateData = req.body;
+      
+      // 获取当前用户
+      const currentUser = req.user ? req.user.username : 'unknown';
+      
+      // 添加 updated_by 字段到更新数据
+      const updateDataWithUser = {
+        ...updateData,
+        updated_by: currentUser
+      };
 
       // 检查库存是否存在
       const existingInventory = await InventoryModel.findById(id);
@@ -257,7 +266,7 @@ class InventoryController {
         return res.status(404).json(errorResponse('库存记录不存在', 'INVENTORY_NOT_FOUND'));
       }
 
-      const updateResult = await InventoryModel.updateById(id, updateData);
+      const updateResult = await InventoryModel.updateById(id, updateDataWithUser);
       
       // 检查更新结果
       if (updateResult && updateResult.success) {
@@ -357,6 +366,9 @@ class InventoryController {
         }
       }
       
+      // 获取当前用户
+      const currentUser = req.user ? req.user.username : 'unknown';
+      
       // 执行批量更新
       const results = [];
       const errors = [];
@@ -373,8 +385,14 @@ class InventoryController {
             continue;
           }
           
+          // 添加 updated_by 字段到更新数据
+          const updateDataWithUser = {
+            ...update.data,
+            updated_by: currentUser
+          };
+          
           // 执行更新，自动设置updated_at为当前北京时间
-          const updatedRecord = await InventoryModel.updateById(update.id, update.data);
+          const updatedRecord = await InventoryModel.updateById(update.id, updateDataWithUser);
           results.push({
             id: update.id,
             success: true,
@@ -417,6 +435,9 @@ class InventoryController {
         }
       }
       
+      // 获取当前用户
+      const currentUser = req.user ? req.user.username : 'unknown';
+      
       // 执行批量恢复
       const results = [];
       const errors = [];
@@ -433,8 +454,14 @@ class InventoryController {
             continue;
           }
           
+          // 添加 updated_by 字段到恢复数据
+          const restoreDataWithUser = {
+            ...restore.data,
+            updated_by: currentUser
+          };
+          
           // 执行恢复，自动设置updated_at为当前北京时间
-          const restoredRecord = await InventoryModel.updateById(restore.id, restore.data);
+          const restoredRecord = await InventoryModel.updateById(restore.id, restoreDataWithUser);
           results.push({
             id: restore.id,
             success: true,

@@ -26,6 +26,7 @@ export interface StockInItem {
   transaction_type?: 'in' | 'out' | 'return';
   created_at?: string;
   updated_at?: string;
+  updated_by?: string;
 }
 
 export interface BatchStockInRequest {

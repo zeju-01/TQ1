@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
     `stock_out_time` TIMESTAMP NULL COMMENT '出库操作时间',
     `stock_out_by` INT NULL COMMENT '出库操作用户',
     `stock_out_notes` TEXT NULL COMMENT '出库备注',
+    `updated_by` VARCHAR(50) NULL COMMENT '最后更新用户',
     
     -- 其他字段
     `stock_out_status` VARCHAR(20) NULL COMMENT '出库状态',
