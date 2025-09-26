@@ -610,6 +610,93 @@ const StockInPage: React.FC = () => {
     },
   ];
 
+  // 过滤入库更新搜索结果
+  const filteredSearchResults = useMemo(() => {
+    console.log('搜索过滤执行，searchText:', searchText);
+    console.log('原始数据 searchResults:', searchResults);
+    
+    // 如果搜索文本为空，返回所有项目
+    if (!searchText || searchText.trim() === '') {
+      console.log('搜索文本为空，返回所有项目');
+      return searchResults;
+    }
+    
+    // 否则根据搜索文本过滤项目
+    try {
+      const searchTextTrimmed = searchText.trim();
+      const searchTextLower = searchTextTrimmed.toLowerCase();
+      
+      const filtered = searchResults.filter(item => {
+        // 检查各个字段是否包含搜索文本
+        // 处理产品名称，如果是数字ID则转换为产品名称
+        let productName = '';
+        if (typeof item.product_name === 'number') {
+          const productId = item.product_name;
+          const product = products.find(p => p.id === productId);
+          productName = product && product.name ? product.name : `产品ID: ${item.product_name}`;
+        } else if (typeof item.product_name === 'string') {
+          productName = item.product_name;
+        } else {
+          productName = '';
+        }
+        
+        const productModel = item.product_model || '';
+        const imei = item.imei || '';
+        const operator = item.operator || '';
+        const boxNumber = item.box_number || '';
+        const stockInNumber = item.stock_in_number || '';
+        const contractNumber = item.contract_number || '';
+        const supplier = item.supplier || '';
+        
+        // 确保所有字段在调用 toLowerCase() 前都是字符串
+        const matchesProductName = productName.toString().toLowerCase().includes(searchTextLower);
+        const matchesProductModel = productModel.toString().toLowerCase().includes(searchTextLower);
+        // IMEI号是纯数字，不需要转换为小写
+        const matchesImei = imei.includes(searchTextTrimmed);
+        const matchesOperator = operator.toString().toLowerCase().includes(searchTextLower);
+        const matchesBoxNumber = boxNumber.toString().toLowerCase().includes(searchTextLower);
+        const matchesStockInNumber = stockInNumber.toString().toLowerCase().includes(searchTextLower);
+        const matchesContractNumber = contractNumber.toString().toLowerCase().includes(searchTextLower);
+        const matchesSupplier = supplier.toString().toLowerCase().includes(searchTextLower);
+        
+        const result = matchesProductName || matchesProductModel || matchesImei || matchesOperator || 
+               matchesBoxNumber || matchesStockInNumber || matchesContractNumber || matchesSupplier;
+               
+        console.log('项目过滤检查:', {
+          item,
+          searchTextTrimmed,
+          searchTextLower,
+          productName,
+          productModel,
+          imei,
+          operator,
+          boxNumber,
+          stockInNumber,
+          contractNumber,
+          supplier,
+          matchesProductName,
+          matchesProductModel,
+          matchesImei,
+          matchesOperator,
+          matchesBoxNumber,
+          matchesStockInNumber,
+          matchesContractNumber,
+          matchesSupplier,
+          result
+        });
+        
+        return result;
+      });
+      
+      console.log('过滤后的结果:', filtered);
+      return filtered;
+    } catch (error) {
+      console.error('搜索过滤出错:', error);
+      // 出错时返回空数组而不是所有项目，防止页面空白
+      return [];
+    }
+  }, [searchResults, searchText, products]);
+
   const uploadProps = {
     name: 'file',
     multiple: true,
@@ -3443,13 +3530,28 @@ const StockInPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 搜索框 */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                  <Input 
+                    placeholder="搜索产品名称、产品型号、IMEI号等" 
+                    value={searchText || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      console.log('搜索框值变化:', value);
+                      handleSearchDebounced(value);
+                    }}
+                    prefix={<SearchOutlined />}
+                    style={{ width: '250px' }}
+                  />
+                </div>
+
               <Table
                 columns={searchColumns}
-                dataSource={searchResults}
+                dataSource={filteredSearchResults}
                 pagination={{
                   current: currentPage,
                   pageSize: pageSize,
-                  total: searchResults.length,
+                  total: filteredSearchResults.length,
                   onChange: (page: number, pageSize?: number) => {
                     setCurrentPage(page);
                     setPageSize(pageSize || 10);
@@ -3466,195 +3568,11 @@ const StockInPage: React.FC = () => {
           </TabPane>
         </Tabs>
       </Card>
-      
-      {/* 编辑模态框 - 用于批量入库项目编辑 */}
-      <Modal
-        title="编辑入库项目"
-        open={isEditModalVisible}
-        onOk={handleSaveEditBatchItem}
-        onCancel={() => {
-          setIsEditModalVisible(false);
-          setEditingItem(null);
-          editForm.resetFields();
-        }}
-        width={800}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Form form={editForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="产品名称"
-                name="product_name"
-                rules={[{ required: true, message: '请选择产品名称' }]}
-              >
-                <Select 
-                  placeholder="请选择产品名称" 
-                  loading={loadingProducts}
-                  showSearch
-                  optionFilterProp="label"
-                  onChange={(value, option) => {
-                    if (value) {
-                      const selectedProduct = products.find(p => p.id === value);
-                      if (selectedProduct) {
-                        editForm.setFieldsValue({
-                          product_model: selectedProduct.model || ''
-                        });
-                      }
-                    } else {
-                      editForm.setFieldsValue({
-                        product_model: ''
-                      });
-                    }
-                  }}
-                >
-                  {productOptions.map(option => (
-                    <Select.Option key={option.value} value={option.value} label={option.label}>
-                      {option.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="产品型号"
-                name="product_model"
-              >
-                <Input placeholder="产品型号将根据产品名称自动填充" disabled />
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="运营商"
-                name="operator"
-              >
-                <Select 
-                  placeholder="请选择运营商" 
-                  loading={loadingOperators}
-                  showSearch
-                  optionFilterProp="label"
-                >
-                  {operatorOptions.map(option => (
-                    <Select.Option key={option.value} value={option.value} label={option.label}>
-                      {option.label || '请选择'}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="IMEI号"
-                name="imei"
-              >
-                <Input placeholder="请输入15位IMEI号" maxLength={15} />
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="箱号"
-                name="box_number"
-              >
-                <Input placeholder="请输入箱号" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="入库时间"
-                name="stock_in_date"
-                rules={[{ required: true, message: '请选择入库时间' }]}
-              >
-                <DatePicker 
-                  style={{ width: '100%' }}
-                  format="YYYY-MM-DD"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="入库单号"
-                name="stock_in_number"
-              >
-                <Input placeholder="系统自动生成" disabled />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="工厂工单"
-                name="factory_order"
-              >
-                <Input placeholder="请输入工厂工单号" />
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="数量"
-                name="quantity"
-                rules={[{ required: true, message: '请输入数量' }]}
-              >
-                <InputNumber min={1} max={999} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="合同编号"
-                name="contract_number"
-              >
-                <Input placeholder="请输入合同编号" />
-              </Form.Item>
-            </Col>
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="供应商"
-                name="supplier"
-              >
-                <Select 
-                  placeholder="请选择供应商" 
-                  loading={loadingSuppliers}
-                  showSearch
-                  optionFilterProp="label"
-                >
-                  {supplierOptions.map(option => (
-                    <Select.Option key={option.value} value={option.value} label={option.label}>
-                      {option.label || '请选择'}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="备注"
-                name="remark"
-              >
-                <Input placeholder="请输入备注" />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
 
       {/* 更新模态框 - 用于搜索结果编辑 */}
       <Modal
         title="更新入库记录"
-        open={isUpdateModalVisible}
+        visible={isUpdateModalVisible}
         onOk={handleSaveUpdate}
         onCancel={() => {
           setIsUpdateModalVisible(false);
