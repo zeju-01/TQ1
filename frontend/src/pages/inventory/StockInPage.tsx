@@ -1554,7 +1554,7 @@ const StockInPage: React.FC = () => {
             } else {
               return {
                 ...item,
-                status: 'success' as 'success'
+                status: 'pending' as 'pending'
               };
             }
           });
@@ -1761,7 +1761,7 @@ const StockInPage: React.FC = () => {
                 size="small" 
                 type="link"
                 icon={<EditOutlined />}
-                onClick={() => handleEditItem(record)}
+                onClick={() => handleEditBatchItem(record)}
                 style={{ fontSize: '14px' }}
               >
                 编辑
@@ -1771,7 +1771,7 @@ const StockInPage: React.FC = () => {
                 type="link" 
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => handleDeleteItem(record.id)}
+                onClick={() => handleDeleteBatchItem(record.id)}
                 style={{ fontSize: '14px' }}
               >
                 删除
@@ -1870,7 +1870,7 @@ const StockInPage: React.FC = () => {
             supplier: record.supplier || '',
             remark: record.stock_in_notes || '',
             receipt_documents: [],
-            status: 'success' as 'success'
+            status: 'pending' as 'pending'
           }));
           
           console.log('设置搜索结果:', convertedRecords);
@@ -1940,7 +1940,7 @@ const StockInPage: React.FC = () => {
             supplier: record.supplier || '',
             remark: record.stock_in_notes || '',
             receipt_documents: [],
-            status: 'success' as 'success'
+            status: 'pending' as 'pending'
           }));
           
           console.log('设置搜索结果:', convertedRecords);
@@ -1992,7 +1992,7 @@ const StockInPage: React.FC = () => {
           supplier: record.supplier || '',
           remark: record.stock_in_notes || '',
           receipt_documents: [],
-          status: 'success' as 'success'
+          status: 'pending' as 'pending'
         }));
         
         console.log('加载入库记录，设置搜索结果:', convertedRecords);
@@ -2631,25 +2631,37 @@ const StockInPage: React.FC = () => {
       width: 'auto',
       render: (_, record) => (
         <Space>
-          <Button 
-            size="small" 
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditItem(record)}
-            style={{ fontSize: '14px' }}
-          >
-            编辑
-          </Button>
-          <Button 
-            size="small" 
-            type="link" 
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteItem(record.id)}
-            style={{ fontSize: '14px' }}
-          >
-            删除
-          </Button>
+          <>
+            <Button 
+              size="small" 
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditItem(record)}
+              style={{ fontSize: '14px' }}
+            >
+              编辑
+            </Button>
+            <Button 
+              size="small" 
+              type="link" 
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteItem(record.id)}
+              style={{ fontSize: '14px' }}
+            >
+              删除
+            </Button>
+          </>
+          {record.status === 'error' && (
+            <Button 
+              size="small" 
+              type="link"
+              onClick={() => message.info(record.error_message || '未知错误')}
+              style={{ fontSize: '14px' }}
+            >
+              查看错误
+            </Button>
+          )}
         </Space>
       )
     }
@@ -3755,6 +3767,190 @@ const StockInPage: React.FC = () => {
                 name="stock_in_number"
               >
                 <Input placeholder="系统自动生成" disabled />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="工厂工单"
+                name="factory_order"
+              >
+                <Input placeholder="请输入工厂工单号" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="数量"
+                name="quantity"
+                rules={[{ required: true, message: '请输入数量' }]}
+              >
+                <InputNumber min={1} max={999} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="合同编号"
+                name="contract_number"
+              >
+                <Input placeholder="请输入合同编号" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="供应商"
+                name="supplier"
+              >
+                <Select 
+                  placeholder="请选择供应商" 
+                  loading={loadingSuppliers}
+                  showSearch
+                  optionFilterProp="label"
+                >
+                  {supplierOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value} label={option.label}>
+                      {option.label || '请选择'}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="备注"
+                name="remark"
+              >
+                <Input placeholder="请输入备注" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+
+      {/* 批量入库编辑模态框 */}
+      <Modal
+        title="编辑入库记录"
+        visible={isEditModalVisible}
+        onOk={handleSaveEditBatchItem}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          setEditingItem(null);
+          editForm.resetFields();
+        }}
+        width={800}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form form={editForm} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="产品名称"
+                name="product_name"
+                rules={[{ required: true, message: '请选择产品名称' }]}
+              >
+                <Select 
+                  placeholder="请选择产品名称" 
+                  loading={loadingProducts}
+                  showSearch
+                  optionFilterProp="label"
+                  onChange={(value, option) => {
+                    if (value) {
+                      const selectedProduct = products.find(p => p.id === value);
+                      if (selectedProduct) {
+                        editForm.setFieldsValue({
+                          product_model: selectedProduct.model || ''
+                        });
+                      }
+                    } else {
+                      editForm.setFieldsValue({
+                        product_model: ''
+                      });
+                    }
+                  }}
+                >
+                  {productOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value} label={option.label}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="产品型号"
+                name="product_model"
+              >
+                <Input placeholder="产品型号将根据产品名称自动填充" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="运营商"
+                name="operator"
+              >
+                <Select 
+                  placeholder="请选择运营商" 
+                  loading={loadingOperators}
+                  showSearch
+                  optionFilterProp="label"
+                >
+                  {operatorOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value} label={option.label}>
+                      {option.label || '请选择'}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="IMEI号"
+                name="imei"
+              >
+                <Input placeholder="请输入15位IMEI号" maxLength={15} />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="箱号"
+                name="box_number"
+              >
+                <Input placeholder="请输入箱号" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="入库时间"
+                name="stock_in_date"
+                rules={[{ required: true, message: '请选择入库时间' }]}
+              >
+                <DatePicker 
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="入库单号"
+                name="stock_in_number"
+              >
+                <Input placeholder="请输入入库单号" />
               </Form.Item>
             </Col>
             <Col span={12}>
