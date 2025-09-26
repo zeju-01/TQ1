@@ -189,6 +189,7 @@ const StockInPage: React.FC = () => {
         const stockInNumber = item.stock_in_number || '';
         const contractNumber = item.contract_number || '';
         const supplier = item.supplier || '';
+        const factoryOrder = item.factory_order || ''; // 添加工厂工单字段
         
         // 确保所有字段在调用 toLowerCase() 前都是字符串
         const matchesProductName = productName.toString().toLowerCase().includes(searchTextLower);
@@ -200,9 +201,10 @@ const StockInPage: React.FC = () => {
         const matchesStockInNumber = stockInNumber.toString().toLowerCase().includes(searchTextLower);
         const matchesContractNumber = contractNumber.toString().toLowerCase().includes(searchTextLower);
         const matchesSupplier = supplier.toString().toLowerCase().includes(searchTextLower);
+        const matchesFactoryOrder = factoryOrder.toString().toLowerCase().includes(searchTextLower); // 工厂工单匹配
         
         const result = matchesProductName || matchesProductModel || matchesImei || matchesOperator || 
-               matchesBoxNumber || matchesStockInNumber || matchesContractNumber || matchesSupplier;
+               matchesBoxNumber || matchesStockInNumber || matchesContractNumber || matchesSupplier || matchesFactoryOrder;
                
         console.log('项目过滤检查:', {
           item,
@@ -216,6 +218,7 @@ const StockInPage: React.FC = () => {
           stockInNumber,
           contractNumber,
           supplier,
+          factoryOrder, // 添加工厂工单字段到日志
           matchesProductName,
           matchesProductModel,
           matchesImei,
@@ -224,6 +227,7 @@ const StockInPage: React.FC = () => {
           matchesStockInNumber,
           matchesContractNumber,
           matchesSupplier,
+          matchesFactoryOrder, // 添加工厂工单匹配结果到日志
           result
         });
         
@@ -647,6 +651,7 @@ const StockInPage: React.FC = () => {
         const stockInNumber = item.stock_in_number || '';
         const contractNumber = item.contract_number || '';
         const supplier = item.supplier || '';
+        const factoryOrder = item.factory_order || ''; // 添加工厂工单字段
         
         // 确保所有字段在调用 toLowerCase() 前都是字符串
         const matchesProductName = productName.toString().toLowerCase().includes(searchTextLower);
@@ -658,9 +663,10 @@ const StockInPage: React.FC = () => {
         const matchesStockInNumber = stockInNumber.toString().toLowerCase().includes(searchTextLower);
         const matchesContractNumber = contractNumber.toString().toLowerCase().includes(searchTextLower);
         const matchesSupplier = supplier.toString().toLowerCase().includes(searchTextLower);
+        const matchesFactoryOrder = factoryOrder.toString().toLowerCase().includes(searchTextLower); // 工厂工单匹配
         
         const result = matchesProductName || matchesProductModel || matchesImei || matchesOperator || 
-               matchesBoxNumber || matchesStockInNumber || matchesContractNumber || matchesSupplier;
+               matchesBoxNumber || matchesStockInNumber || matchesContractNumber || matchesSupplier || matchesFactoryOrder;
                
         console.log('项目过滤检查:', {
           item,
@@ -674,6 +680,7 @@ const StockInPage: React.FC = () => {
           stockInNumber,
           contractNumber,
           supplier,
+          factoryOrder, // 添加工厂工单字段到日志
           matchesProductName,
           matchesProductModel,
           matchesImei,
@@ -682,6 +689,7 @@ const StockInPage: React.FC = () => {
           matchesStockInNumber,
           matchesContractNumber,
           matchesSupplier,
+          matchesFactoryOrder, // 添加工厂工单匹配结果到日志
           result
         });
         
@@ -1814,6 +1822,8 @@ const StockInPage: React.FC = () => {
     
     if (filterType) {
       try {
+        // 添加更多调试信息
+        console.log('调用searchStockInNumbers前的参数:', { filterType, searchValue });
         const numbers = await searchStockInNumbers(filterType, searchValue);
         console.log('搜索到的入库单号:', numbers);
         setStockInNumbers(numbers);
@@ -1863,6 +1873,7 @@ const StockInPage: React.FC = () => {
         }
       } catch (error: any) {
         console.error('搜索失败:', error);
+        console.error('错误详情:', error.response || error.message || error);
         message.error('搜索失败: ' + error.message);
         setStockInNumbers([]);
         setSearchResults([]);
@@ -3256,6 +3267,7 @@ const StockInPage: React.FC = () => {
                           // 触发自动搜索，直接传入当前的searchValue
                           if (value) {
                             console.log('触发防抖搜索');
+                            console.log('筛选条件变化时调用debouncedSearch:', { filterType: value, searchValue });
                             debouncedSearch(value, searchValue, 0);
                           } else {
                             console.log('清空搜索结果');
@@ -3293,6 +3305,7 @@ const StockInPage: React.FC = () => {
                           // 触发自动搜索，直接传入当前的filterType
                           if (filterType) {
                             console.log('触发防抖搜索');
+                            console.log('搜索内容变化时调用debouncedSearch:', { filterType, searchValue: value });
                             debouncedSearch(filterType, value, 0);
                           } else {
                             console.log('清空搜索结果');
