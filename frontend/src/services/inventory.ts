@@ -246,22 +246,22 @@ export const getInventoryById = async (id: number): Promise<Inventory> => {
   }
 };
 
-// 更新库存信息
-export const updateInventory = async (id: number, updateData: Partial<Inventory>): Promise<Inventory> => {
+// 更新库存记录
+export const updateInventoryRecord = async (id: number, updateData: Partial<Inventory>): Promise<Inventory> => {
   try {
     const response = await api.put(`/inventory/${id}`, updateData);
     return response.data.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || '更新库存失败');
+    throw new Error(error.response?.data?.message || '更新库存记录失败');
   }
 };
 
 // 删除库存记录
-export const deleteInventory = async (id: number): Promise<void> => {
+export const deleteInventoryRecord = async (id: number): Promise<void> => {
   try {
     await api.delete(`/inventory/${id}`);
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || '删除库存失败');
+    throw new Error(error.response?.data?.message || '删除库存记录失败');
   }
 };
 

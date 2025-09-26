@@ -128,6 +128,15 @@ router.put('/:id',
   InventoryController.updateById
 );
 
+// 删除库存记录
+router.delete('/:id', 
+  authenticateToken,
+  requireOperator,
+  validateId,
+  handleValidationErrors,
+  InventoryController.deleteById
+);
+
 // 获取库存详情
 router.get('/:id', 
   validateId,

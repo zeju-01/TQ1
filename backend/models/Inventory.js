@@ -242,6 +242,27 @@ class InventoryModel {
     }
   }
 
+  // 根据ID删除库存记录
+  static async deleteById(id) {
+    try {
+      const query = 'DELETE FROM inventory WHERE id = ?';
+      const result = await executeQuery(query, [id]);
+      
+      if (result.success) {
+        // 检查是否有记录被删除
+        if (result.data.affectedRows > 0) {
+          return { success: true, message: '库存记录删除成功' };
+        } else {
+          throw new Error('未找到指定的库存记录');
+        }
+      }
+      
+      throw new Error('删除库存记录失败');
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // 根据IMEI查找库存
   static async findByIMEI(imei) {
     try {
@@ -285,17 +306,24 @@ class InventoryModel {
       console.log('转换后北京时间:', beijingTime);
       
       setClause.push('updated_at = ?');
-      params.push(beijingTime, id);
+      params.push(beijingTime);
+      params.push(id);  // 将 id 添加到参数数组的末尾
 
       const query = `UPDATE inventory SET ${setClause.join(', ')} WHERE id = ?`;
       const result = await executeQuery(query, params);
       
-      if (result.success && result.data.affectedRows > 0) {
-        return await this.findById(id);
-      } else {
-        throw new Error('更新库存失败');
+      // 检查更新结果
+      if (result.success) {
+        // 即使 affectedRows 为 0（表示没有实际变化），也认为更新成功
+        // 因为用户可能提交了与原值相同的值
+        // 我们不再需要获取更新后的记录，直接返回成功
+        return { success: true, affectedRows: result.data.affectedRows || 0 };
       }
+      
+      // 如果查询不成功，这里才是应该抛出错误的地方
+      throw new Error('更新库存失败: 数据库查询未成功');
     } catch (error) {
+      console.error('更新库存错误:', error);
       throw error;
     }
   }

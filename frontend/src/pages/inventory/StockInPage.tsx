@@ -39,7 +39,18 @@ import * as XLSX from 'xlsx';
 import { productService } from '../../services/products';
 import { operatorService } from '../../services/operators';
 import { supplierService } from '../../services/suppliers';
-import { stockIn, batchStockIn, getMaxStockInNumber, checkIMEI, searchStockInNumbers, getStockInRecordsByNumber, batchUpdateInventory, batchRestoreInventory } from '../../services/inventory';
+import {
+  stockIn,
+  batchStockIn,
+  getMaxStockInNumber,
+  checkIMEI,
+  searchStockInNumbers,
+  getStockInRecordsByNumber,
+  batchUpdateInventory,
+  batchRestoreInventory,
+  updateInventoryRecord,
+  deleteInventoryRecord
+} from '../../services/inventory';
 
 import type { Product } from '../../types';
 import type { Operator } from '../../services/operators';
@@ -2372,26 +2383,56 @@ const StockInPage: React.FC = () => {
     });
   };
 
-  const handleSaveUpdate = () => {
-    updateForm.validateFields().then(values => {
+  const handleSaveUpdate = async () => {
+    updateForm.validateFields().then(async values => {
       if (updatingItem) {
-        // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
-        const updatedItem: StockInItem = {
-          ...updatingItem,
-          ...values,
-          stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : ''
-        };
-        
-        setSearchResults(prev => 
-          prev.map(item => 
-            item.id === updatingItem.id ? updatedItem : item
-          )
-        );
-        
-        setIsUpdateModalVisible(false);
-        setUpdatingItem(null);
-        updateForm.resetFields();
-        message.success('更新成功！');
+        try {
+          setLoading(true);
+          // 已将 stock_in_time 改为 stock_in_date 以与后端保持一致
+          const updatedItem: StockInItem = {
+            ...updatingItem,
+            ...values,
+            stock_in_date: values.stock_in_date ? values.stock_in_date.format('YYYY-MM-DD') : ''
+          };
+
+          // 调用后端API更新记录
+          const updatedRecord = await updateInventoryRecord(updatingItem.id, {
+            product_name: typeof updatedItem.product_name === 'number' 
+              ? updatedItem.product_name.toString() 
+              : updatedItem.product_name,
+            product_model: updatedItem.product_model,
+            operator: updatedItem.operator,
+            imei: updatedItem.imei,
+            batch_number: updatedItem.box_number,
+            stock_in_quantity: updatedItem.quantity,
+            supplier: updatedItem.supplier,
+            factory_order: updatedItem.factory_order,
+            stock_in_contract_number: updatedItem.contract_number,
+            stock_in_notes: updatedItem.remark,
+            stock_in_number: updatedItem.stock_in_number,
+            stock_in_date: updatedItem.stock_in_date
+          });
+
+          // 更新前端显示的数据
+          setSearchResults(prev => 
+            prev.map(item => 
+              item.id === updatingItem.id ? {
+                ...item,
+                ...updatedItem
+              } : item
+            )
+          );
+
+          setIsUpdateModalVisible(false);
+          setUpdatingItem(null);
+          updateForm.resetFields();
+          message.success('更新成功！');
+        } catch (error: any) {
+          console.error('更新失败:', error);
+          message.error('更新失败: ' + (error.message || '未知错误'));
+        } finally {
+          setLoading(false);
+        }
       }
     }).catch(errorInfo => {
       console.error('更新表单验证失败:', errorInfo);
@@ -2403,9 +2444,21 @@ const StockInPage: React.FC = () => {
     Modal.confirm({
       title: '确认删除',
       content: '确定要删除这条入库记录吗？此操作不可恢复。',
-      onOk: () => {
-        setSearchResults(prev => prev.filter(item => item.id !== id));
-        message.success('删除成功！');
+      onOk: async () => {
+        try {
+          setLoading(true);
+          // 调用后端API删除记录
+          await deleteInventoryRecord(id);
+          
+          // 更新前端显示的数据
+          setSearchResults(prev => prev.filter(item => item.id !== id));
+          message.success('删除成功！');
+        } catch (error: any) {
+          console.error('删除失败:', error);
+          message.error('删除失败: ' + (error.message || '未知错误'));
+        } finally {
+          setLoading(false);
+        }
       }
     });
   };
