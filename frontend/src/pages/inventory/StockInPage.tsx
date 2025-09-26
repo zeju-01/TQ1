@@ -2897,13 +2897,12 @@ const StockInPage: React.FC = () => {
                   </Col>
                    <Col span={5}>
                     <Form.Item
-                      
+                     
                     >
                      
                     </Form.Item>
                   </Col>
-                  
-                  <Col span={5}>
+                  <Col span={9}>
                     <Form.Item
                       label={(
                         <span>
