@@ -30,7 +30,8 @@ import {
   ExclamationCircleOutlined,
   EditOutlined,
   SearchOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  QuestionCircleOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -575,37 +576,37 @@ const StockInPage: React.FC = () => {
       title: '序号',
       dataIndex: 'id',
       key: 'id',
-      width: 60,
+      width: 'auto',
     },
     {
       title: '产品名称',
       dataIndex: 'product_name',
       key: 'product_name',
-      width: 150,
+      width: 'auto',
     },
     {
       title: '产品型号',
       dataIndex: 'product_model',
       key: 'product_model',
-      width: 150,
+      width: 'auto',
     },
     {
       title: '运营商',
       dataIndex: 'operator',
       key: 'operator',
-      width: 120,
+      width: 'auto',
     },
     {
       title: '总数',
       dataIndex: 'total_quantity',
       key: 'total_quantity',
-      width: 80,
+      width: 'auto',
     },
     {
       title: '入库时间',
       dataIndex: 'stock_in_date',
       key: 'stock_in_date',
-      width: 200,
+      width: 'auto',
     },
   ];
 
@@ -1503,7 +1504,7 @@ const StockInPage: React.FC = () => {
     {
       title: '序号',
       key: 'index',
-      width: 60,
+      width: 'auto',
       render: (_, __, index) => {
         return (currentPage - 1) * pageSize + index + 1;
       }
@@ -1512,7 +1513,7 @@ const StockInPage: React.FC = () => {
       title: '产品名称',
       dataIndex: 'product_name',
       key: 'product_name',
-      width: 120,
+      width: 'auto',
       render: (text) => {
         if (typeof text === 'number') {
           const product = products.find(p => p.id === text);
@@ -1525,84 +1526,84 @@ const StockInPage: React.FC = () => {
       title: '产品型号',
       dataIndex: 'product_model',
       key: 'product_model',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '运营商',
       dataIndex: 'operator',
       key: 'operator',
-      width: 100,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: 'IMEI号',
       dataIndex: 'imei',
       key: 'imei',
-      width: 150,
+      width: 'auto',
       render: (text) => <code style={{ fontSize: '14px' }}>{text}</code>
     },
     {
       title: '箱号',
       dataIndex: 'box_number',
       key: 'box_number',
-      width: 100,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '入库时间',
       dataIndex: 'stock_in_date',
       key: 'stock_in_date',
-      width: 150,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '入库单号',
       dataIndex: 'stock_in_number',
       key: 'stock_in_number',
-      width: 150,
+      width: 'auto',
       render: (text) => text ? <code style={{ fontSize: '14px' }}>{text}</code> : <span style={{ fontSize: '14px' }}>-</span>
     },
     {
       title: '工厂工单',
       dataIndex: 'factory_order',
       key: 'factory_order',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 80,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '合同编号',
       dataIndex: 'contract_number',
       key: 'contract_number',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '供应商',
       dataIndex: 'supplier',
       key: 'supplier',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '备注',
       dataIndex: 'remark',
       key: 'remark',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '收货单据',
       dataIndex: 'stock_in_document',
       key: 'stock_in_document',
-      width: 120,
+      width: 'auto',
       render: (stock_in_document) => {
         if (stock_in_document) {
           // 如果是逗号分隔的多个文件名，显示所有文件名
@@ -1625,7 +1626,7 @@ const StockInPage: React.FC = () => {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 'auto',
       render: (status, record) => {
         if (status === 'pending') {
           return <Tag color="default" style={{ fontSize: '14px' }}>待处理</Tag>;
@@ -1645,7 +1646,7 @@ const StockInPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 'auto',
       render: (_, record) => (
         <Space>
           {record.status === 'pending' && (
@@ -2357,7 +2358,7 @@ const StockInPage: React.FC = () => {
     {
       title: '序号',
       key: 'index',
-      width: 60,
+      width: 'auto',
       render: (_, __, index) => {
         return (currentPage - 1) * pageSize + index + 1;
       }
@@ -2366,7 +2367,7 @@ const StockInPage: React.FC = () => {
       title: '产品名称',
       dataIndex: 'product_name',
       key: 'product_name',
-      width: 120,
+      width: 'auto',
       render: (text) => {
         if (typeof text === 'number') {
           const product = products.find(p => p.id === text);
@@ -2379,84 +2380,84 @@ const StockInPage: React.FC = () => {
       title: '产品型号',
       dataIndex: 'product_model',
       key: 'product_model',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '运营商',
       dataIndex: 'operator',
       key: 'operator',
-      width: 100,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: 'IMEI号',
       dataIndex: 'imei',
       key: 'imei',
-      width: 150,
+      width: 'auto',
       render: (text) => <code style={{ fontSize: '14px' }}>{text}</code>
     },
     {
       title: '箱号',
       dataIndex: 'box_number',
       key: 'box_number',
-      width: 100,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '入库时间',
       dataIndex: 'stock_in_date',
       key: 'stock_in_date',
-      width: 150,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '入库单号',
       dataIndex: 'stock_in_number',
       key: 'stock_in_number',
-      width: 150,
+      width: 'auto',
       render: (text) => text ? <code style={{ fontSize: '14px' }}>{text}</code> : <span style={{ fontSize: '14px' }}>-</span>
     },
     {
       title: '工厂工单',
       dataIndex: 'factory_order',
       key: 'factory_order',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 80,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '合同编号',
       dataIndex: 'contract_number',
       key: 'contract_number',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '供应商',
       dataIndex: 'supplier',
       key: 'supplier',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '备注',
       dataIndex: 'remark',
       key: 'remark',
-      width: 120,
+      width: 'auto',
       render: (text) => <span style={{ fontSize: '14px' }}>{text}</span>
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 'auto',
       render: (status, record) => {
         if (status === 'pending') {
           return <Tag color="default" style={{ fontSize: '14px' }}>待处理</Tag>;
@@ -2476,7 +2477,7 @@ const StockInPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 'auto',
       render: (_, record) => (
         <Space>
           <Button 
@@ -2680,7 +2681,14 @@ const StockInPage: React.FC = () => {
               <Row gutter={16}>
                 <Col span={24}>
                   <Form.Item
-                    label="收货单据"
+                    label={(
+                      <span>
+                        收货单据{' '}
+                        <Tooltip title="支持上传图片、PDF或文档文件，单文件大小不超过10MB">
+                          <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                        </Tooltip>
+                      </span>
+                    )}
                     name="receipt_documents"
                   >
                     <Upload 
@@ -2701,9 +2709,6 @@ const StockInPage: React.FC = () => {
                         <div style={{ marginTop: 8 }}>上传文件</div>
                       </div>
                     </Upload>
-                    <div style={{ color: '#999', fontSize: '12px', marginTop: 4 }}>
-                      支持上传图片、PDF或文档文件，单文件大小不超过10MB
-                    </div>
                   </Form.Item>
                 </Col>
               </Row>
@@ -2896,12 +2901,19 @@ const StockInPage: React.FC = () => {
                 <Row gutter={16}>
                   <Col span={24}>
                     <Form.Item
-                      label="收货单据"
                       name="receipt_documents"
                     >
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                         {/* 收货单据上传控件 */}
                         <div style={{ flex: 1, minWidth: '200px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <span>
+                              收货单据{' '}
+                              <Tooltip title="支持上传图片、PDF或文档文件，单文件大小不超过10MB">
+                                <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                              </Tooltip>
+                            </span>
+                          </div>
                           <Upload 
                             {...receiptUploadProps} 
                             listType="picture-card"
@@ -2920,43 +2932,55 @@ const StockInPage: React.FC = () => {
                               <div style={{ marginTop: 8 }}>上传文件</div>
                             </div>
                           </Upload>
-                          <div style={{ color: '#999', fontSize: '12px', marginTop: 4 }}>
-                            支持上传图片、PDF或文档文件，单文件大小不超过10MB
-                          </div>
                         </div>
                         
-                        {/* Excel导入控件 */}
+                        {/* Excel导入和下载模板控件 */}
                         <div style={{ flex: 1, minWidth: '200px' }}>
-                          <Upload 
-                            {...excelUploadProps} 
-                            listType="picture-card"
-                            openFileDialogOnClick={false}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <div onClick={handleExcelImportClick}>
-                              <UploadOutlined style={{ fontSize: '24px' }} />
-                              <div style={{ marginTop: 8 }}>Excel导入</div>
+                          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <span>
+                                  导入项目{' '}
+                                  <Tooltip title="点击上传Excel文件进行批量导入">
+                                    <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                                  </Tooltip>
+                                </span>
+                              </div>
+                              {/* Excel导入控件 */}
+                              <Upload 
+                                {...excelUploadProps} 
+                                listType="picture-card"
+                                openFileDialogOnClick={false}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div onClick={handleExcelImportClick}>
+                                  <UploadOutlined style={{ fontSize: '24px' }} />
+                                  <div style={{ marginTop: 8 }}>Excel导入</div>
+                                </div>
+                              </Upload>
                             </div>
-                          </Upload>
-                          <div style={{ color: '#999', fontSize: '12px', marginTop: 4 }}>
-                            点击上传Excel文件进行批量导入
-                          </div>
-                        </div>
-                        
-                        {/* 下载模板按钮 */}
-                        <div style={{ flex: 1, minWidth: '200px' }}>
-                          <Upload 
-                            listType="picture-card"
-                            openFileDialogOnClick={false}
-                            style={{ cursor: 'pointer', height: '100%' }}
-                          >
-                            <div onClick={downloadExcelTemplate}>
-                              <DownloadOutlined style={{ fontSize: '24px' }} />
-                              <div style={{ marginTop: 8 }}>下载模板</div>
+                            
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <span>
+                                  下载模板{' '}
+                                  <Tooltip title="下载Excel导入模板文件">
+                                    <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                                  </Tooltip>
+                                </span>
+                              </div>
+                              {/* 下载模板按钮 */}
+                              <Upload 
+                                listType="picture-card"
+                                openFileDialogOnClick={false}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div onClick={downloadExcelTemplate}>
+                                  <DownloadOutlined style={{ fontSize: '24px' }} />
+                                  <div style={{ marginTop: 8 }}>下载模板</div>
+                                </div>
+                              </Upload>
                             </div>
-                          </Upload>
-                          <div style={{ color: '#999', fontSize: '12px', marginTop: 4 }}>
-                            点击下载Excel导入模板文件
                           </div>
                         </div>
                       </div>
@@ -2971,7 +2995,6 @@ const StockInPage: React.FC = () => {
                     size="large"
                     onClick={handleAddBatchItem}
                     icon={<PlusOutlined />}
-                    style={{ fontSize: '14px' }}
                   >
                     添加入库项目
                   </Button>
@@ -2980,9 +3003,19 @@ const StockInPage: React.FC = () => {
 
               <Divider />
 
-              <Steps current={currentStep}>
-                <Steps.Step title="添加入库项目" />
-                <Steps.Step title="确认入库" />
+              <Steps 
+                current={currentStep}
+                size="small"
+                style={{ fontSize: '12px' }}
+              >
+                <Steps.Step 
+                  title="添加入库项目" 
+                  style={{ fontSize: '12px' }}
+                />
+                <Steps.Step 
+                  title="确认入库" 
+                  style={{ fontSize: '12px' }}
+                />
               </Steps>
 
               <Divider />
@@ -2994,7 +3027,6 @@ const StockInPage: React.FC = () => {
                   loading={loading}
                   onClick={handleBatchSubmit}
                   icon={<InboxOutlined />}
-                  style={{ fontSize: '14px' }}
                 >
                   确认入库
                 </Button>
@@ -3110,7 +3142,8 @@ const StockInPage: React.FC = () => {
                     pageSizeOptions: ['10', '20', '50', '100']
                   }}
                   rowKey="id"
-                  scroll={{ x: 1200 }}
+                  scroll={{ x: 'max-content' }}
+                  style={{ width: '100%' }}
                 />
               </div>
 
@@ -3232,13 +3265,19 @@ const StockInPage: React.FC = () => {
                             <>
                               {/* 收货单据时显示文件上传组件 */}
                               <Form.Item
-                                label="收货单据文件"
+                                label={(
+                                  <span>
+                                    收货单据{' '}
+                                    <Tooltip title="支持上传图片、PDF或文档文件，单文件大小不超过10MB">
+                                      <QuestionCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                                    </Tooltip>
+                                  </span>
+                                )}
                                 name="receipt_documents"
-                                extra="支持上传图片、PDF或文档文件，单文件大小不超过10MB"
                               >
                                 <Upload 
                                   {...receiptUploadProps} 
-                                  listType="picture-card"
+                                  listType="picture"
                                   fileList={receiptFileList}
                                   onChange={(info) => {
                                     console.log('收货单据上传:', info.fileList);
@@ -3249,10 +3288,7 @@ const StockInPage: React.FC = () => {
                                     });
                                   }}
                                 >
-                                  <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>上传文件</div>
-                                  </div>
+                                  <Button icon={<UploadOutlined />}>上传文件</Button>
                                 </Upload>
                               </Form.Item>
                             </>
@@ -3316,7 +3352,8 @@ const StockInPage: React.FC = () => {
                     pagination={false}
                     rowKey="id"
                     size="small"
-                    scroll={{ x: 800 }}
+                    scroll={{ x: 'max-content' }}
+                    style={{ width: '100%' }}
                   />
                 </Card>
               </div>
@@ -3429,7 +3466,8 @@ const StockInPage: React.FC = () => {
                   pageSizeOptions: ['10', '20', '50', '100']
                 }}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+                style={{ width: '100%' }}
                 locale={{ emptyText: '暂无数据，请输入搜索条件进行搜索' }}
               />
             </Card>
